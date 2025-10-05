@@ -12,6 +12,12 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 import type { BudgetEntry, FixedExpense } from "../domain/types";
 import {
   entryFormSchema,
@@ -697,6 +703,7 @@ const EntriesSection = ({
   const [status, setStatus] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleSubmit = useCallback(
     async (data: EntryFormData) => {
@@ -718,6 +725,7 @@ const EntriesSection = ({
         });
         setStatus(editingEntry ? "Movimiento actualizado." : "Movimiento registrado.");
         setEditingEntry(null);
+        setDialogOpen(false);
       } catch (err) {
         console.error("Failed to persist entry", err);
         setFormError("No se pudo guardar el movimiento.");
@@ -779,19 +787,35 @@ const EntriesSection = ({
         </span>
       </div>
 
-      <div className="mt-6">
-        <EntryComposer
-          categories={categories}
-          currencyOptions={currencyChoices}
-          defaultCurrency={currency}
-          mode={editingEntry ? "edit" : "create"}
-          initialEntry={editingEntry}
-          submitting={submitting}
-          onSubmit={handleSubmit}
-          onCancel={() => setEditingEntry(null)}
-          error={formError}
-        />
-      </div>
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) {
+          setEditingEntry(null);
+          setFormError(null);
+        }
+      }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingEntry ? "Editar movimiento" : "Nuevo movimiento"}
+            </DialogTitle>
+          </DialogHeader>
+          <EntryComposer
+            categories={categories}
+            currencyOptions={currencyChoices}
+            defaultCurrency={currency}
+            mode={editingEntry ? "edit" : "create"}
+            initialEntry={editingEntry}
+            submitting={submitting}
+            onSubmit={handleSubmit}
+            onCancel={() => {
+              setEditingEntry(null);
+              setDialogOpen(false);
+            }}
+            error={formError}
+          />
+        </DialogContent>
+      </Dialog>
 
       <div className="mt-6 grid gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-elevated)] p-4">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,1fr))]">
@@ -913,6 +937,7 @@ const EntriesSection = ({
                           setStatus(null);
                           setFormError(null);
                           setEditingEntry(entry);
+                          setDialogOpen(true);
                         }}
                         className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-foreground-muted)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-foreground)]"
                       >
@@ -945,6 +970,20 @@ const EntriesSection = ({
           </tbody>
         </table>
       </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          setStatus(null);
+          setFormError(null);
+          setEditingEntry(null);
+          setDialogOpen(true);
+        }}
+        className="fixed bottom-8 right-8 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-[0_8px_16px_rgba(0,0,0,0.15)] transition hover:scale-105 hover:bg-[var(--color-primary-strong)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary-soft)]"
+        aria-label="Agregar movimiento"
+      >
+        <Plus className="h-8 w-8" />
+      </button>
     </section>
   );
 };
