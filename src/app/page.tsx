@@ -1672,6 +1672,7 @@ export default function Home() {
   const entriesManager = useEntriesManager(monthKey);
   const fixedExpensesManager = useFixedExpensesManager();
   const [currentPage, setCurrentPage] = useState<"home" | "settings">("home");
+  const [chartView, setChartView] = useState<"variable" | "all">("variable");
 
   const categories = settings?.categories ?? [];
   const currency = settings?.currency ?? "MXN";
@@ -1712,25 +1713,25 @@ export default function Home() {
   );
 
   // Calculate chart data
-  const chartData = useMemo(() => {
+  const COLORS = [
+    "var(--color-primary)",
+    "var(--color-warning)",
+    "var(--color-accent)",
+    "var(--color-magenta)",
+    "var(--color-yellow)",
+    "var(--color-cyan)",
+    "#ff6b9d",
+    "#4ecdc4",
+    "#95e1d3",
+    "#f38181",
+  ];
+
+  const chartDataVariable = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
     entriesManager.entries.forEach((entry) => {
       const cat = entry.category || "Sin categoría";
       categoryTotals[cat] = (categoryTotals[cat] || 0) + entry.amount;
     });
-
-    const COLORS = [
-      "var(--color-primary)",
-      "var(--color-warning)",
-      "var(--color-accent)",
-      "var(--color-magenta)",
-      "var(--color-yellow)",
-      "var(--color-cyan)",
-      "#ff6b9d",
-      "#4ecdc4",
-      "#95e1d3",
-      "#f38181",
-    ];
 
     return Object.entries(categoryTotals)
       .map(([name, value], index) => ({
@@ -1740,6 +1741,32 @@ export default function Home() {
       }))
       .sort((a, b) => b.value - a.value);
   }, [entriesManager.entries]);
+
+  const chartDataAll = useMemo(() => {
+    const categoryTotals: Record<string, number> = {};
+
+    // Add variable expenses
+    entriesManager.entries.forEach((entry) => {
+      const cat = entry.category || "Sin categoría";
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + entry.amount;
+    });
+
+    // Add fixed expenses
+    fixedExpensesManager.items.forEach((item) => {
+      const cat = item.category || "Sin categoría";
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + item.amount;
+    });
+
+    return Object.entries(categoryTotals)
+      .map(([name, value], index) => ({
+        name,
+        value,
+        color: COLORS[index % COLORS.length],
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [entriesManager.entries, fixedExpensesManager.items]);
+
+  const chartData = chartView === "variable" ? chartDataVariable : chartDataAll;
 
   if (loading && !settings) {
     return (
@@ -1803,9 +1830,33 @@ export default function Home() {
 
           {chartData.length > 0 && (
             <section className="rounded-[24px] border-[3px] border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
-              <h2 className="mb-4 text-xl font-black text-[var(--color-foreground)]">
-                Gastos por Categoría
-              </h2>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-black text-[var(--color-foreground)]">
+                  Gastos por Categoría
+                </h2>
+                <div className="flex gap-2 rounded-[16px] border-[3px] border-[var(--color-border)] bg-[var(--color-elevated)] p-1">
+                  <button
+                    onClick={() => setChartView("variable")}
+                    className={`rounded-[12px] px-4 py-2 text-xs font-bold uppercase tracking-wide transition ${
+                      chartView === "variable"
+                        ? "bg-[var(--color-primary)] text-white shadow-lg"
+                        : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]"
+                    }`}
+                  >
+                    Solo Variables
+                  </button>
+                  <button
+                    onClick={() => setChartView("all")}
+                    className={`rounded-[12px] px-4 py-2 text-xs font-bold uppercase tracking-wide transition ${
+                      chartView === "all"
+                        ? "bg-[var(--color-primary)] text-white shadow-lg"
+                        : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]"
+                    }`}
+                  >
+                    Incluye Fijos
+                  </button>
+                </div>
+              </div>
               <ResponsiveContainer width="100%" height={400}>
                 <PieChart>
                   <Pie
