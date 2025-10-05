@@ -820,7 +820,7 @@ const EntriesSection = ({
       </Dialog>
 
       <div className="mt-6 grid gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-elevated)] p-4">
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,1fr))]">
+        <div className="grid gap-3 md:grid-cols-3">
           <label className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-foreground-muted)]">
             <Search className="h-4 w-4" />
             <input
@@ -854,22 +854,24 @@ const EntriesSection = ({
             <option value="variable">Variables</option>
             <option value="fixed">Fijos</option>
           </select>
+        </div>
 
-          <div className="flex items-center gap-3">
-            <input
-              type="date"
-              value={filters.fromDate ?? ""}
-              onChange={(event) => updateFilters({ fromDate: event.target.value || null })}
-              className="w-full rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none"
-            />
-            <span className="text-xs text-[var(--color-foreground-muted)]">a</span>
-            <input
-              type="date"
-              value={filters.toDate ?? ""}
-              onChange={(event) => updateFilters({ toDate: event.target.value || null })}
-              className="w-full rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none"
-            />
-          </div>
+        <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr]">
+          <input
+            type="date"
+            value={filters.fromDate ?? ""}
+            onChange={(event) => updateFilters({ fromDate: event.target.value || null })}
+            className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none"
+            placeholder="Desde"
+          />
+          <span className="flex items-center text-sm font-bold text-[var(--color-foreground-muted)]">a</span>
+          <input
+            type="date"
+            value={filters.toDate ?? ""}
+            onChange={(event) => updateFilters({ toDate: event.target.value || null })}
+            className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none"
+            placeholder="Hasta"
+          />
         </div>
 
         <div className="flex justify-end">
