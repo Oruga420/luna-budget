@@ -2,48 +2,39 @@
 
 :root {
   color-scheme: light;
-  --color-background: #fffdf8;
+  --color-background: #ffffff;
   --color-surface: #ffffff;
-  --color-elevated: #f7f5ff;
-  --color-foreground: #1f2933;
-  --color-foreground-muted: #3d4956;
-  --color-border: rgba(31, 41, 51, 0.12);
-  --color-border-strong: rgba(31, 41, 51, 0.35);
+  --color-elevated: #fffef8;
+  --color-foreground: #000000;
+  --color-foreground-muted: #333333;
+  --color-border: #000000;
+  --color-border-strong: #000000;
   --color-primary: #ff7a00;
+  --color-primary-strong: #e66d00;
   --color-primary-soft: #ffa94d;
   --color-warning: #ffd166;
   --color-warning-soft: #ffe08c;
-  --color-accent: #1ec9c8;
+  --color-accent: #00d4d4;
   --color-accent-soft: #79e0e0;
+  --color-magenta: #ff00ff;
+  --color-yellow: #ffeb3b;
+  --color-cyan: #00ffff;
   --color-success: #2f9e44;
   --color-danger: #e03131;
-  --shadow-soft: 0 10px 30px rgba(255, 122, 0, 0.08);
-  --shadow-card: 0 20px 45px rgba(31, 41, 51, 0.08);
-  --radius-lg: 24px;
-  --radius-md: 18px;
-  --radius-sm: 12px;
+  --shadow-soft: 0 8px 24px rgba(255, 122, 0, 0.25);
+  --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.15);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
   --font-sans: var(--font-roboto);
   --font-mono: var(--font-roboto-mono);
+  --border-width: 3px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    color-scheme: dark;
-    --color-background: #0b0f15;
-    --color-surface: #101723;
-    --color-elevated: #182132;
-    --color-foreground: #f5faff;
-    --color-foreground-muted: #c7d0dc;
-    --color-border: rgba(235, 245, 255, 0.12);
-    --color-border-strong: rgba(235, 245, 255, 0.35);
-    --color-primary: #ffa94d;
-    --color-primary-soft: #ff7a00;
-    --color-warning: #ffe08c;
-    --color-warning-soft: #ffd166;
-    --color-accent: #79e0e0;
-    --color-accent-soft: #1ec9c8;
-    --shadow-soft: 0 10px 30px rgba(17, 24, 39, 0.45);
-    --shadow-card: 0 20px 45px rgba(8, 12, 20, 0.65);
+    color-scheme: light;
+    /* Keep light mode colors even in dark mode preference */
   }
 }
 
@@ -57,8 +48,23 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 700;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 900;
+}
+
+button, input, select, textarea {
+  font-weight: 700;
+}
+
+/* Global black borders for all boxes */
+section, div[class*="rounded"], div[class*="border"] {
+  border-width: var(--border-width) !important;
+  border-color: var(--color-border) !important;
 }
 
 main {
