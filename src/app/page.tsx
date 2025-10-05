@@ -155,7 +155,7 @@ const SummaryCard = ({
 
   return (
     <motion.div
-      initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+      initial={shouldReduceMotion ? undefined : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: shouldReduceMotion ? 0 : 0.5 }}
       className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]"
@@ -713,6 +713,7 @@ const EntryComposer = ({
           ) : (
             <div className="space-y-4">
               <div className="relative rounded-[24px] border-[3px] border-[var(--color-border)] overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={imagePreview}
                   alt="Preview"
@@ -2214,9 +2215,9 @@ export default function Home() {
       <AnimatePresence>
         {thresholdReached && currentPage === "home" && (
           <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, height: 0, marginBottom: 0 }}
+            initial={shouldReduceMotion ? undefined : { opacity: 0, height: 0, marginBottom: 0 }}
             animate={{ opacity: 1, height: "auto", marginBottom: 24 }}
-            exit={shouldReduceMotion ? false : { opacity: 0, height: 0, marginBottom: 0 }}
+            exit={shouldReduceMotion ? undefined : { opacity: 0, height: 0, marginBottom: 0 }}
             transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
             className="flex items-start gap-3 rounded-[24px] border-[3px] border-[var(--color-warning)] bg-[#fff8e1] p-4 text-[var(--color-foreground)] shadow-[var(--shadow-soft)]"
           >
@@ -2344,7 +2345,7 @@ export default function Home() {
 
           {timelineData.length > 0 && (
             <motion.section
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+              initial={shouldReduceMotion ? undefined : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: shouldReduceMotion ? 0 : 0.5, delay: 0.2 }}
               className="rounded-[16px] border-[3px] border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-soft)] sm:rounded-[24px] sm:p-6"
@@ -2369,9 +2370,9 @@ export default function Home() {
               <AnimatePresence>
                 {showTimeline && (
                   <motion.div
-                    initial={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
+                    initial={shouldReduceMotion ? undefined : { opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
-                    exit={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
+                    exit={shouldReduceMotion ? undefined : { opacity: 0, height: 0 }}
                     transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
                   >
                     <ResponsiveContainer width="100%" height={250} className="sm:!h-[350px]">
