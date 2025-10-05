@@ -110,10 +110,12 @@ const SummaryCard = ({
   label,
   value,
   helper,
+  helperColor,
 }: {
   label: string;
   value: string;
   helper?: string;
+  helperColor?: string;
 }) => (
   <div className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
     <p className="text-sm font-medium uppercase tracking-wide text-[var(--color-foreground-muted)]">
@@ -121,7 +123,7 @@ const SummaryCard = ({
     </p>
     <p className="mt-3 text-3xl font-semibold text-[var(--color-foreground)]">{value}</p>
     {helper ? (
-      <p className="mt-2 text-sm text-[var(--color-foreground-muted)]">{helper}</p>
+      <p className={`mt-2 text-sm font-bold ${helperColor || "text-[var(--color-foreground-muted)]"}`}>{helper}</p>
     ) : null}
   </div>
 );
@@ -1895,6 +1897,14 @@ export default function Home() {
 
   const chartData = chartView === "variable" ? chartDataVariable : chartDataAll;
 
+  // Calculate available for savings goal with color
+  const savingsAvailable = remaining;
+  const savingsColor = savingsAvailable > 6000
+    ? "text-green-600"
+    : savingsAvailable >= 4001
+    ? "text-yellow-600"
+    : "text-red-600";
+
   if (loading && !settings) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -1941,7 +1951,8 @@ export default function Home() {
             <SummaryCard
               label="Meta de ahorro"
               value={formatCurrency(settings?.savingsGoal ?? 0, currency)}
-              helper="Manten la disciplina financiando primero tu meta."
+              helper={`Disponible: ${formatCurrency(savingsAvailable, currency)}`}
+              helperColor={savingsColor}
             />
             <SummaryCard
               label="Gasto acumulado"
