@@ -18,6 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import { Navigation } from "../components/Navigation";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import type { BudgetEntry, FixedExpense } from "../domain/types";
 import {
   entryFormSchema,
@@ -1669,6 +1671,7 @@ export default function Home() {
   const monthKey = useMemo(() => getMonthKey(new Date()), []);
   const entriesManager = useEntriesManager(monthKey);
   const fixedExpensesManager = useFixedExpensesManager();
+  const [currentPage, setCurrentPage] = useState<"home" | "settings">("home");
 
   const categories = settings?.categories ?? [];
   const currency = settings?.currency ?? "MXN";
@@ -1706,6 +1709,36 @@ export default function Home() {
     [refresh, refreshEntries, refreshFixed],
   );
 
+  // Calculate chart data
+  const chartData = useMemo(() => {
+    const categoryTotals: Record<string, number> = {};
+    entriesManager.entries.forEach((entry) => {
+      const cat = entry.category || "Sin categoría";
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + entry.amount;
+    });
+
+    const COLORS = [
+      "var(--color-primary)",
+      "var(--color-warning)",
+      "var(--color-accent)",
+      "var(--color-magenta)",
+      "var(--color-yellow)",
+      "var(--color-cyan)",
+      "#ff6b9d",
+      "#4ecdc4",
+      "#95e1d3",
+      "#f38181",
+    ];
+
+    return Object.entries(categoryTotals)
+      .map(([name, value], index) => ({
+        name,
+        value,
+        color: COLORS[index % COLORS.length],
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [entriesManager.entries]);
+
   if (loading && !settings) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -1717,32 +1750,31 @@ export default function Home() {
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-12 sm:gap-10 sm:px-10">
       <header className="flex flex-col gap-4">
-        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[var(--color-primary-soft)]/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-primary)]">
+        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[var(--color-primary-soft)]/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-primary)]">
           Luna Budget Keeper
         </span>
-        <h1 className="text-4xl font-semibold text-[var(--color-foreground)] sm:text-5xl">
-          Control total de tu presupuesto mensual, sin salir de tu navegador.
+        <h1 className="text-4xl font-black text-[var(--color-foreground)] sm:text-5xl">
+          Control total de tu presupuesto mensual
         </h1>
-        <p className="max-w-2xl text-base text-[var(--color-foreground-muted)] sm:text-lg">
-          Gestiona gastos, ajusta categorias, programa gastos fijos y exporta tus datos en segundos. Todo se almacena localmente para cuidar tu privacidad.
-        </p>
       </header>
 
-      {thresholdReached ? (
-        <div className="flex items-start gap-3 rounded-[24px] border border-[var(--color-warning)] bg-[#fff8e1] p-4 text-[var(--color-foreground)] shadow-[var(--shadow-soft)]">
+      <Navigation currentPage={currentPage} onNavigate={setCurrentPage} />
+
+      {thresholdReached && currentPage === "home" ? (
+        <div className="flex items-start gap-3 rounded-[24px] border-[3px] border-[var(--color-warning)] bg-[#fff8e1] p-4 text-[var(--color-foreground)] shadow-[var(--shadow-soft)]">
           <AlertTriangle className="mt-0.5 h-5 w-5 text-[var(--color-warning)]" />
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide">
+            <p className="text-sm font-bold uppercase tracking-wide">
               Alerta de presupuesto
             </p>
-            <p className="text-sm text-[var(--color-foreground-muted)]">
+            <p className="text-sm font-bold text-[var(--color-foreground-muted)]">
               Has usado {formatPercent(settings!.alertThresholdPct, 0)} de tu presupuesto mensual.
             </p>
           </div>
         </div>
       ) : null}
 
-      <section className="grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
+      {currentPage === "home" ? (
         <div className="grid gap-6">
           <div className="grid gap-5 sm:grid-cols-2">
             <SummaryCard
@@ -1767,7 +1799,45 @@ export default function Home() {
             />
           </div>
 
-          <ExportButton monthKey={monthKey} entries={entriesManager.entries} onRefresh={entriesManager.refresh} />
+          {chartData.length > 0 && (
+            <section className="rounded-[24px] border-[3px] border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
+              <h2 className="mb-4 text-xl font-black text-[var(--color-foreground)]">
+                Gastos por Categoría
+              </h2>
+              <ResponsiveContainer width="100%" height={400}>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={120}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value, currency)}
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "3px solid black",
+                      borderRadius: "16px",
+                      fontWeight: "bold",
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{
+                      fontWeight: "bold",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </section>
+          )}
 
           <EntriesSection
             categories={categories}
@@ -1776,9 +1846,10 @@ export default function Home() {
             manager={entriesManager}
           />
         </div>
-
+      ) : (
         <div className="grid gap-6">
           <SettingsForm />
+          <ExportButton monthKey={monthKey} entries={entriesManager.entries} onRefresh={entriesManager.refresh} />
           <CategoryManager
             categories={categories}
             onAdd={handleAddCategory}
@@ -1791,7 +1862,7 @@ export default function Home() {
             manager={fixedExpensesManager}
           />
         </div>
-      </section>
+      )}
     </div>
   );
 }
