@@ -1676,10 +1676,12 @@ export default function Home() {
   const categories = settings?.categories ?? [];
   const currency = settings?.currency ?? "MXN";
   const spent = entriesManager.spent;
-  const remaining = settings ? Math.max(settings.budget - spent, 0) : 0;
+  const fixedTotal = fixedExpensesManager.monthlyTotal;
+  const totalSpent = spent + fixedTotal;
+  const remaining = settings ? Math.max(settings.budget - totalSpent, 0) : 0;
   const thresholdReached =
     settings && settings.budget > 0
-      ? spent / settings.budget >= settings.alertThresholdPct
+      ? totalSpent / settings.budget >= settings.alertThresholdPct
       : false;
 
   const refreshEntries = entriesManager.refresh;
