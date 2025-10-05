@@ -19,6 +19,10 @@ export const useEntriesManager = (monthKey: string) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [filters, setFilters] = useState<EntryFilters>(createDefaultFilters);
 
+  useEffect(() => {
+    console.log("Entries state updated, new count:", entries.length);
+  }, [entries]);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
@@ -40,13 +44,21 @@ export const useEntriesManager = (monthKey: string) => {
 
   const saveEntry = useCallback(
     async (input: EntryInput) => {
+      console.log("saveEntry called with input:", input);
+      console.log("Current monthKey:", monthKey);
       const saved = await upsertEntry(input);
+      console.log("Entry saved to DB:", saved);
       setEntries((prev) => {
+        console.log("Previous entries count:", prev.length);
         const filtered = prev.filter((entry) => entry.id !== saved.id);
+        console.log("After filtering out existing entry:", filtered.length);
         if (saved.monthKey !== monthKey) {
+          console.log("Entry monthKey doesn't match current monthKey, not adding to state");
           return filtered;
         }
-        return [...filtered, saved];
+        const newEntries = [...filtered, saved];
+        console.log("New entries count:", newEntries.length);
+        return newEntries;
       });
       return saved;
     },
