@@ -48,7 +48,7 @@ export const addCategory = async (name: string): Promise<BudgetSettings> => {
 };
 
 const updateEntriesCategory = async (
-  entriesStore: IDBPObjectStore<BudgetDBSchema, ["settings", "entries", "fixedExpenses"], "entries">,
+  entriesStore: IDBPObjectStore<BudgetDBSchema, ["settings", "entries", "fixedExpenses"], "entries", "readwrite">,
   currentKey: string,
   nextName: string,
   timestamp: string,
@@ -68,7 +68,7 @@ const updateEntriesCategory = async (
 };
 
 const updateFixedExpensesCategory = async (
-  fixedStore: IDBPObjectStore<BudgetDBSchema, ["settings", "entries", "fixedExpenses"], "fixedExpenses">,
+  fixedStore: IDBPObjectStore<BudgetDBSchema, ["settings", "entries", "fixedExpenses"], "fixedExpenses", "readwrite">,
   currentKey: string,
   nextName: string,
   timestamp: string,
