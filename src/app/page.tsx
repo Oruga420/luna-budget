@@ -34,7 +34,7 @@ import type { EntryFilters } from "../lib/hooks/useEntriesManager";
 import { useFixedExpensesManager } from "../lib/hooks/useFixedExpensesManager";
 import { addCategory, renameCategory, removeCategory } from "../lib/storage/categories";
 
-const currencyOptions = ["MXN", "USD", "EUR", "COP", "ARS"] as const;
+const currencyOptions = ["MXN", "USD", "EUR", "COP", "ARS", "CAD"] as const;
 
 const expenseTypeLabels: Record<"fixed" | "variable", string> = {
   fixed: "Fijo",
