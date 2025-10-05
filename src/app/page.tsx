@@ -357,10 +357,12 @@ const SettingsForm = () => {
 const ExportButton = ({
   monthKey,
   entries,
+  fixedExpenses,
   onRefresh,
 }: {
   monthKey: string;
   entries: BudgetEntry[];
+  fixedExpenses: FixedExpense[];
   onRefresh: () => Promise<BudgetEntry[]>;
 }) => {
   const { settings } = useSettings();
@@ -375,13 +377,34 @@ const ExportButton = ({
 
     try {
       const currentEntries = entries.length ? entries : await onRefresh();
-      const csv = serializeEntriesToCsv(currentEntries, settings, monthKey);
+
+      // Convert fixed expenses to BudgetEntry format
+      const fixedEntriesAsBudget: BudgetEntry[] = fixedExpenses.map((fixed) => ({
+        id: `fixed-${fixed.id}`,
+        itemName: fixed.name,
+        amount: fixed.amount,
+        currency: settings.currency,
+        category: fixed.category,
+        type: "fixed" as const,
+        source: "manual" as const,
+        notes: fixed.notes,
+        imageRef: null,
+        dateIso: `${monthKey}-${String(fixed.billingDay || 1).padStart(2, "0")}`,
+        monthKey,
+        createdAt: fixed.createdAt,
+        updatedAt: fixed.updatedAt,
+      }));
+
+      // Combine all entries
+      const allEntries = [...currentEntries, ...fixedEntriesAsBudget];
+
+      const csv = serializeEntriesToCsv(allEntries, settings, monthKey);
       const blob = buildCsvBlob(csv);
       const filename = buildMonthFilename(monthKey);
       triggerBrowserDownload(blob, filename);
       setMessage(
-        currentEntries.length
-          ? `Exportamos ${currentEntries.length} movimientos.`
+        allEntries.length
+          ? `Exportamos ${allEntries.length} movimientos (${currentEntries.length} variables + ${fixedEntriesAsBudget.length} fijos).`
           : "Exportamos un CSV vacio con los encabezados.",
       );
     } catch (err) {
@@ -2443,7 +2466,12 @@ export default function Home() {
       ) : (
         <div className="grid gap-6">
           <SettingsForm />
-          <ExportButton monthKey={monthKey} entries={entriesManager.entries} onRefresh={entriesManager.refresh} />
+          <ExportButton
+            monthKey={monthKey}
+            entries={entriesManager.entries}
+            fixedExpenses={fixedExpensesManager.items}
+            onRefresh={entriesManager.refresh}
+          />
           <CategoryManager
             categories={categories}
             onAdd={handleAddCategory}
