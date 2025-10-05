@@ -1691,9 +1691,24 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
                     {editingCell?.id === item.id && editingCell.field === "category" ? (
                       <select
                         value={cellValue}
-                        onChange={(e) => setCellValue(e.target.value)}
-                        onBlur={() => handleCellBlur(item)}
-                        onKeyDown={(e) => handleCellKeyDown(e, item)}
+                        onChange={async (e) => {
+                          setCellValue(e.target.value);
+                          try {
+                            await save({
+                              id: item.id,
+                              name: item.name,
+                              amount: item.amount,
+                              category: e.target.value,
+                              billingDay: item.billingDay,
+                              notes: item.notes,
+                            });
+                            setStatus("Categoría actualizada.");
+                            setEditingCell(null);
+                          } catch (err) {
+                            console.error("Failed to update category", err);
+                            setError("No se pudo actualizar la categoría.");
+                          }
+                        }}
                         autoFocus
                         className="w-full rounded border border-[var(--color-primary)] bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]"
                       >
