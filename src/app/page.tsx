@@ -6,11 +6,13 @@ import {
   AlertTriangle,
   Download,
   Edit,
+  Image as ImageIcon,
   Loader2,
   Plus,
   Search,
   Settings as SettingsIcon,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import {
@@ -453,6 +455,12 @@ const EntryComposer = ({
     createEntryState(initialEntry, categories, defaultCurrency),
   );
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof EntryFormState, string>>>({});
+  const [inputMode, setInputMode] = useState<"manual" | "photo">("manual");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [processingImage, setProcessingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initialState = useMemo(
     () => createEntryState(initialEntry, categories, defaultCurrency),
@@ -528,6 +536,98 @@ const EntryComposer = ({
     await onSubmit(parsed.data);
     if (mode === "create") {
       setForm(createEntryState(null, categories, defaultCurrency));
+      setSelectedImage(null);
+      setImagePreview(null);
+    }
+  };
+
+  const handleImageSelect = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setImageError("Por favor selecciona un archivo de imagen válido");
+      return;
+    }
+
+    if (file.size > 4 * 1024 * 1024) {
+      setImageError("La imagen es demasiado grande. Máximo 4MB");
+      return;
+    }
+
+    setImageError(null);
+    setSelectedImage(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleImageSelect(file);
+    }
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      handleImageSelect(file);
+    }
+  };
+
+  const handleProcessImage = async () => {
+    if (!selectedImage) return;
+
+    setProcessingImage(true);
+    setImageError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", selectedImage);
+
+      const response = await fetch("/api/vision", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to process image");
+      }
+
+      const result = await response.json();
+
+      // Pre-fill form with OpenAI results
+      setForm((prev) => ({
+        ...prev,
+        itemName: result.item_name || prev.itemName,
+        category: categories.includes(result.category_suggestion)
+          ? result.category_suggestion
+          : prev.category,
+        notes: result.notes || prev.notes,
+      }));
+
+      // Switch to manual mode to allow editing
+      setInputMode("manual");
+    } catch (err) {
+      console.error("Error processing image:", err);
+      setImageError(
+        err instanceof Error ? err.message : "Error procesando la imagen"
+      );
+    } finally {
+      setProcessingImage(false);
+    }
+  };
+
+  const clearImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    setImageError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -556,6 +656,104 @@ const EntryComposer = ({
           </button>
         ) : null}
       </div>
+
+      {mode === "create" && (
+        <div className="mt-6 flex gap-2 rounded-[16px] border-[3px] border-[var(--color-border)] bg-[var(--color-surface)] p-1">
+          <button
+            type="button"
+            onClick={() => setInputMode("manual")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-[12px] px-4 py-2 text-sm font-bold uppercase tracking-wide transition ${
+              inputMode === "manual"
+                ? "bg-[var(--color-primary)] text-white shadow-lg"
+                : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]"
+            }`}
+          >
+            <Edit className="h-4 w-4" />
+            Manual
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode("photo")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-[12px] px-4 py-2 text-sm font-bold uppercase tracking-wide transition ${
+              inputMode === "photo"
+                ? "bg-[var(--color-primary)] text-white shadow-lg"
+                : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]"
+            }`}
+          >
+            <ImageIcon className="h-4 w-4" />
+            Foto
+          </button>
+        </div>
+      )}
+
+      {inputMode === "photo" && mode === "create" ? (
+        <div className="mt-6 space-y-4">
+          {!imagePreview ? (
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              onClick={() => fileInputRef.current?.click()}
+              className="cursor-pointer rounded-[24px] border-[3px] border-dashed border-[var(--color-border)] bg-[var(--color-elevated)] p-8 text-center transition hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/5"
+            >
+              <Upload className="mx-auto h-12 w-12 text-[var(--color-foreground-muted)]" />
+              <p className="mt-4 text-sm font-bold text-[var(--color-foreground)]">
+                Arrastra una imagen aquí o haz click para seleccionar
+              </p>
+              <p className="mt-2 text-xs text-[var(--color-foreground-muted)]">
+                PNG, JPG hasta 4MB
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="relative rounded-[24px] border-[3px] border-[var(--color-border)] overflow-hidden">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-full h-auto max-h-96 object-contain bg-gray-100"
+                />
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  className="absolute right-2 top-2 rounded-full border-[3px] border-[var(--color-border)] bg-white p-2 text-[var(--color-foreground)] transition hover:bg-[var(--color-danger)] hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleProcessImage}
+                disabled={processingImage}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-full border border-transparent bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-[#e86b00] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {processingImage ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Procesando con IA...
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="h-4 w-4" />
+                    Analizar Imagen
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {imageError && (
+            <p className="rounded-2xl border border-[var(--color-danger)] bg-[#ffe3e3] px-4 py-3 text-sm text-[var(--color-danger)]">
+              {imageError}
+            </p>
+          )}
+        </div>
+      ) : null}
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <label className="flex flex-col gap-2 text-sm font-medium text-[var(--color-foreground)]">
