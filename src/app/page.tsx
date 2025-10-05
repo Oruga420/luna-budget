@@ -56,6 +56,7 @@ import { triggerBrowserDownload } from "../lib/export/download";
 import { useEntriesManager } from "../lib/hooks/useEntriesManager";
 import type { EntryFilters } from "../lib/hooks/useEntriesManager";
 import { useFixedExpensesManager } from "../lib/hooks/useFixedExpensesManager";
+import { useServerSync } from "../lib/hooks/useServerSync";
 import { addCategory, renameCategory, removeCategory } from "../lib/storage/categories";
 
 const currencyOptions = ["MXN", "USD", "EUR", "COP", "ARS", "CAD"] as const;
@@ -2073,6 +2074,7 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
 
 export default function Home() {
   const { settings, loading, refresh } = useSettings();
+  const serverSync = useServerSync();
   const monthKey = useMemo(() => getMonthKey(new Date()), []);
   const entriesManager = useEntriesManager(monthKey);
   const fixedExpensesManager = useFixedExpensesManager();
@@ -2095,6 +2097,28 @@ export default function Home() {
 
   const refreshEntries = entriesManager.refresh;
   const refreshFixed = fixedExpensesManager.refresh;
+
+  // Auto-sync to server when data changes
+  useEffect(() => {
+    if (serverSync.loading || !settings) return;
+
+    const syncData = async () => {
+      await serverSync.saveToServer({
+        settings,
+        entries: entriesManager.entries,
+        fixedExpenses: fixedExpensesManager.items,
+        categories,
+      });
+    };
+
+    void syncData();
+  }, [
+    entriesManager.entries,
+    fixedExpensesManager.items,
+    settings,
+    categories,
+    serverSync,
+  ]);
 
   const handleAddCategory = useCallback(
     async (name: string) => {
