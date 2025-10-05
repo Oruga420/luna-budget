@@ -715,6 +715,7 @@ const EntriesSection = ({
       setFormError(null);
       setStatus(null);
       try {
+        console.log("Saving entry with data:", data);
         await saveEntry({
           id: data.id,
           itemName: data.itemName,
@@ -727,13 +728,13 @@ const EntriesSection = ({
           imageRef: editingEntry?.imageRef ?? null,
           date: data.date,
         });
+        console.log("Entry saved successfully");
         setStatus(editingEntry ? "Movimiento actualizado." : "Movimiento registrado.");
         setEditingEntry(null);
         setDialogOpen(false);
       } catch (err) {
         console.error("Failed to persist entry", err);
-        setFormError("No se pudo guardar el movimiento.");
-        throw err;
+        setFormError(`No se pudo guardar el movimiento: ${err instanceof Error ? err.message : "Error desconocido"}`);
       } finally {
         setSubmitting(false);
       }
