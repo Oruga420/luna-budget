@@ -2148,7 +2148,7 @@ export default function Home() {
         color: COLORS[index % COLORS.length],
       }))
       .sort((a, b) => b.value - a.value);
-  }, [entriesManager.entries]);
+  }, [entriesManager.entries, COLORS]);
 
   const chartDataAll = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
@@ -2172,7 +2172,7 @@ export default function Home() {
         color: COLORS[index % COLORS.length],
       }))
       .sort((a, b) => b.value - a.value);
-  }, [entriesManager.entries, fixedExpensesManager.items]);
+  }, [entriesManager.entries, fixedExpensesManager.items, COLORS]);
 
   const chartData = chartView === "variable" ? chartDataVariable : chartDataAll;
 
@@ -2194,7 +2194,7 @@ export default function Home() {
 
     return sortedDates.map((date) => {
       cumulative += dailyTotals[date];
-      const [year, month, day] = date.split("-");
+      const [, month, day] = date.split("-");
       return {
         date,
         displayDate: `${day}/${month}`,
