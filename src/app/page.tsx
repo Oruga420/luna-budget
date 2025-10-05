@@ -1897,8 +1897,8 @@ export default function Home() {
 
   const chartData = chartView === "variable" ? chartDataVariable : chartDataAll;
 
-  // Calculate available for savings goal with color
-  const savingsAvailable = remaining;
+  // Calculate available for savings goal with color (after subtracting savings goal)
+  const savingsAvailable = remaining - (settings?.savingsGoal ?? 0);
   const savingsColor = savingsAvailable > 6000
     ? "text-green-600"
     : savingsAvailable >= 4001
