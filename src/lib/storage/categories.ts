@@ -57,7 +57,7 @@ const updateEntriesCategory = async (
   while (cursor) {
     const value = cursor.value as BudgetEntry;
     if (toKey(value.category) === currentKey) {
-      await cursor.update?.({
+      await cursor.update({
         ...value,
         category: nextName,
         updatedAt: timestamp,
@@ -77,7 +77,7 @@ const updateFixedExpensesCategory = async (
   while (cursor) {
     const value = cursor.value as FixedExpense;
     if (toKey(value.category) === currentKey) {
-      await cursor.update?.({
+      await cursor.update({
         ...value,
         category: nextName,
         updatedAt: timestamp,
