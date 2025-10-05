@@ -21,7 +21,19 @@ import {
 } from "../components/ui/dialog";
 import { Navigation } from "../components/Navigation";
 import { Confetti } from "../components/Confetti";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 import type { BudgetEntry, FixedExpense } from "../domain/types";
 import {
   entryFormSchema,
@@ -1845,6 +1857,7 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState<"home" | "settings">("home");
   const [chartView, setChartView] = useState<"variable" | "all">("variable");
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(true);
   const shouldReduceMotion = useReducedMotion();
 
   const categories = settings?.categories ?? [];
@@ -1940,6 +1953,34 @@ export default function Home() {
   }, [entriesManager.entries, fixedExpensesManager.items]);
 
   const chartData = chartView === "variable" ? chartDataVariable : chartDataAll;
+
+  // Calculate timeline data (daily cumulative spending)
+  const timelineData = useMemo(() => {
+    if (entriesManager.entries.length === 0) return [];
+
+    // Group by date and calculate cumulative
+    const dailyTotals: Record<string, number> = {};
+
+    entriesManager.entries.forEach((entry) => {
+      const date = entry.dateIso;
+      dailyTotals[date] = (dailyTotals[date] || 0) + entry.amount;
+    });
+
+    // Sort dates and calculate cumulative
+    const sortedDates = Object.keys(dailyTotals).sort();
+    let cumulative = 0;
+
+    return sortedDates.map((date) => {
+      cumulative += dailyTotals[date];
+      const [year, month, day] = date.split("-");
+      return {
+        date,
+        displayDate: `${day}/${month}`,
+        daily: dailyTotals[date],
+        cumulative,
+      };
+    });
+  }, [entriesManager.entries]);
 
   // Calculate available for savings goal with color (after subtracting savings goal)
   const savingsAvailable = remaining - (settings?.savingsGoal ?? 0);
@@ -2101,6 +2142,95 @@ export default function Home() {
                 </PieChart>
               </ResponsiveContainer>
             </section>
+          )}
+
+          {timelineData.length > 0 && (
+            <motion.section
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.5, delay: 0.2 }}
+              className="rounded-[16px] border-[3px] border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-soft)] sm:rounded-[24px] sm:p-6"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-[var(--color-foreground)] sm:text-xl">
+                    Gasto Acumulado Diario
+                  </h2>
+                  <p className="text-xs text-[var(--color-foreground-muted)] sm:text-sm">
+                    Evolución de tu gasto a lo largo del mes
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowTimeline(!showTimeline)}
+                  className="rounded-[12px] border-[3px] border-[var(--color-border)] bg-[var(--color-elevated)] px-3 py-2 text-xs font-bold uppercase tracking-wide text-[var(--color-foreground)] transition hover:bg-[var(--color-primary)] hover:text-white sm:px-4"
+                >
+                  {showTimeline ? "Ocultar" : "Mostrar"}
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {showTimeline && (
+                  <motion.div
+                    initial={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
+                    transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
+                  >
+                    <ResponsiveContainer width="100%" height={250} className="sm:!h-[350px]">
+                      <LineChart data={timelineData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.3} />
+                        <XAxis
+                          dataKey="displayDate"
+                          stroke="var(--color-foreground-muted)"
+                          style={{ fontSize: "12px", fontWeight: "bold" }}
+                        />
+                        <YAxis
+                          stroke="var(--color-foreground-muted)"
+                          style={{ fontSize: "12px", fontWeight: "bold" }}
+                          tickFormatter={(value) => formatCurrency(value, currency)}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "white",
+                            border: "3px solid black",
+                            borderRadius: "16px",
+                            fontWeight: "bold",
+                          }}
+                          labelStyle={{ color: "var(--color-foreground)", fontWeight: "900" }}
+                          formatter={(value: number, name: string) => {
+                            if (name === "cumulative") return [formatCurrency(value, currency), "Acumulado"];
+                            return [formatCurrency(value, currency), "Del Día"];
+                          }}
+                        />
+                        <Legend
+                          wrapperStyle={{ fontWeight: "bold", paddingTop: "10px" }}
+                          formatter={(value) => {
+                            if (value === "cumulative") return "Acumulado";
+                            return "Del Día";
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="cumulative"
+                          stroke="var(--color-primary)"
+                          strokeWidth={3}
+                          dot={{ fill: "var(--color-primary)", strokeWidth: 2, r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="daily"
+                          stroke="var(--color-accent)"
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={{ fill: "var(--color-accent)", strokeWidth: 2, r: 3 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.section>
           )}
 
           <EntriesSection
