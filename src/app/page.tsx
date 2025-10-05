@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, useSpring, useTransform, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
   Download,
@@ -19,6 +20,7 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { Navigation } from "../components/Navigation";
+import { Confetti } from "../components/Confetti";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import type { BudgetEntry, FixedExpense } from "../domain/types";
 import {
@@ -106,27 +108,60 @@ const createEntryState = (
   notes: entry?.notes ?? "",
 });
 
+const AnimatedNumber = ({ value, formatter }: { value: number; formatter: (n: number) => string }) => {
+  const spring = useSpring(value, {
+    stiffness: 100,
+    damping: 30,
+    mass: 0.8,
+  });
+
+  useEffect(() => {
+    spring.set(value);
+  }, [spring, value]);
+
+  const display = useTransform(spring, (current) => formatter(Math.round(current)));
+
+  return <motion.span>{display}</motion.span>;
+};
+
 const SummaryCard = ({
   label,
   value,
   helper,
   helperColor,
+  animateValue,
 }: {
   label: string;
   value: string;
   helper?: string;
   helperColor?: string;
-}) => (
-  <div className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
+  animateValue?: { amount: number; formatter: (n: number) => string };
+}) => {
+  const shouldReduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: shouldReduceMotion ? 0 : 0.5 }}
+      className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]"
+    >
     <p className="text-sm font-medium uppercase tracking-wide text-[var(--color-foreground-muted)]">
       {label}
     </p>
-    <p className="mt-3 text-3xl font-semibold text-[var(--color-foreground)]">{value}</p>
+    <p className="mt-3 text-3xl font-semibold text-[var(--color-foreground)]">
+      {animateValue ? (
+        <AnimatedNumber value={animateValue.amount} formatter={animateValue.formatter} />
+      ) : (
+        value
+      )}
+    </p>
     {helper ? (
       <p className={`mt-2 text-sm font-bold ${helperColor || "text-[var(--color-foreground-muted)]"}`}>{helper}</p>
     ) : null}
-  </div>
-);
+    </motion.div>
+  );
+};
 
 const SettingsForm = () => {
   const { settings, updateSettings, saving, error } = useSettings();
@@ -685,6 +720,7 @@ interface EntriesSectionProps {
   currency: string;
   currencyOptions: readonly string[];
   manager: ReturnType<typeof useEntriesManager>;
+  onSaveSuccess?: () => void;
 }
 
 const EntriesSection = ({
@@ -692,6 +728,7 @@ const EntriesSection = ({
   currency,
   currencyOptions: currencyChoices,
   manager,
+  onSaveSuccess,
 }: EntriesSectionProps) => {
   const {
     filteredEntries,
@@ -729,9 +766,13 @@ const EntriesSection = ({
           date: data.date,
         });
         console.log("Entry saved successfully");
+        const isNewEntry = !editingEntry;
         setStatus(editingEntry ? "Movimiento actualizado." : "Movimiento registrado.");
         setEditingEntry(null);
         setDialogOpen(false);
+        if (isNewEntry) {
+          onSaveSuccess?.();
+        }
       } catch (err) {
         console.error("Failed to persist entry", err);
         setFormError(`No se pudo guardar el movimiento: ${err instanceof Error ? err.message : "Error desconocido"}`);
@@ -739,7 +780,7 @@ const EntriesSection = ({
         setSubmitting(false);
       }
     },
-    [editingEntry, saveEntry],
+    [editingEntry, saveEntry, onSaveSuccess],
   );
 
   const handleDelete = useCallback(
@@ -1803,6 +1844,8 @@ export default function Home() {
   const fixedExpensesManager = useFixedExpensesManager();
   const [currentPage, setCurrentPage] = useState<"home" | "settings">("home");
   const [chartView, setChartView] = useState<"variable" | "all">("variable");
+  const [showConfetti, setShowConfetti] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   const categories = settings?.categories ?? [];
   const currency = settings?.currency ?? "MXN";
@@ -1915,8 +1958,10 @@ export default function Home() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:gap-10 lg:px-10 lg:py-12">
-      <header className="flex flex-col gap-3 sm:gap-4">
+    <>
+      <Confetti trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:gap-10 lg:px-10 lg:py-12">
+        <header className="flex flex-col gap-3 sm:gap-4">
         <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[var(--color-primary-soft)]/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--color-primary)] sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.2em]">
           Luna Budget Keeper
         </span>
@@ -1927,19 +1972,32 @@ export default function Home() {
 
       <Navigation currentPage={currentPage} onNavigate={setCurrentPage} />
 
-      {thresholdReached && currentPage === "home" ? (
-        <div className="flex items-start gap-3 rounded-[24px] border-[3px] border-[var(--color-warning)] bg-[#fff8e1] p-4 text-[var(--color-foreground)] shadow-[var(--shadow-soft)]">
-          <AlertTriangle className="mt-0.5 h-5 w-5 text-[var(--color-warning)]" />
-          <div>
-            <p className="text-sm font-bold uppercase tracking-wide">
-              Alerta de presupuesto
-            </p>
-            <p className="text-sm font-bold text-[var(--color-foreground-muted)]">
-              Has usado {formatPercent(settings!.alertThresholdPct, 0)} de tu presupuesto mensual.
-            </p>
-          </div>
-        </div>
-      ) : null}
+      <AnimatePresence>
+        {thresholdReached && currentPage === "home" && (
+          <motion.div
+            initial={shouldReduceMotion ? false : { opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: "auto", marginBottom: 24 }}
+            exit={shouldReduceMotion ? false : { opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
+            className="flex items-start gap-3 rounded-[24px] border-[3px] border-[var(--color-warning)] bg-[#fff8e1] p-4 text-[var(--color-foreground)] shadow-[var(--shadow-soft)]"
+          >
+            <motion.div
+              animate={shouldReduceMotion ? {} : { rotate: [0, -10, 10, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            >
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-[var(--color-warning)]" />
+            </motion.div>
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide">
+                Alerta de presupuesto
+              </p>
+              <p className="text-sm font-bold text-[var(--color-foreground-muted)]">
+                Has usado {formatPercent(settings!.alertThresholdPct, 0)} de tu presupuesto mensual.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {currentPage === "home" ? (
         <div className="grid gap-6">
@@ -1948,22 +2006,38 @@ export default function Home() {
               label="Presupuesto"
               value={formatCurrency(settings?.budget ?? 0, currency)}
               helper={`Disponible: ${formatCurrency(remaining, currency)}`}
+              animateValue={{
+                amount: settings?.budget ?? 0,
+                formatter: (n) => formatCurrency(n, currency),
+              }}
             />
             <SummaryCard
               label="Meta de ahorro"
               value={formatCurrency(settings?.savingsGoal ?? 0, currency)}
               helper={`Disponible: ${formatCurrency(savingsAvailable, currency)}`}
               helperColor={savingsColor}
+              animateValue={{
+                amount: settings?.savingsGoal ?? 0,
+                formatter: (n) => formatCurrency(n, currency),
+              }}
             />
             <SummaryCard
               label="Gasto acumulado"
               value={formatCurrency(spent, currency)}
               helper={`Movimientos: ${entriesManager.entries.length}`}
+              animateValue={{
+                amount: spent,
+                formatter: (n) => formatCurrency(n, currency),
+              }}
             />
             <SummaryCard
               label="Gastos fijos mensuales"
               value={formatCurrency(fixedExpensesManager.monthlyTotal, currency)}
               helper="Se descuentan automaticamente al iniciar cada mes."
+              animateValue={{
+                amount: fixedExpensesManager.monthlyTotal,
+                formatter: (n) => formatCurrency(n, currency),
+              }}
             />
           </div>
 
@@ -2034,6 +2108,7 @@ export default function Home() {
             currency={currency}
             currencyOptions={currencyOptions}
             manager={entriesManager}
+            onSaveSuccess={() => setShowConfetti(true)}
           />
         </div>
       ) : (
@@ -2053,6 +2128,7 @@ export default function Home() {
           />
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
