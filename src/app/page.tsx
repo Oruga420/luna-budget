@@ -1512,6 +1512,8 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
+  const [cellValue, setCellValue] = useState<string>("");
 
   const handleSubmit = useCallback(
     async (data: FixedExpenseFormData) => {
@@ -1563,6 +1565,52 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
     },
     [editing, remove],
   );
+
+  const handleCellClick = (item: FixedExpense, field: string) => {
+    setEditingCell({ id: item.id, field });
+    if (field === "name") setCellValue(item.name);
+    else if (field === "category") setCellValue(item.category);
+    else if (field === "billingDay") setCellValue(item.billingDay?.toString() ?? "");
+    else if (field === "amount") setCellValue(item.amount.toString());
+  };
+
+  const handleCellBlur = async (item: FixedExpense) => {
+    if (!editingCell) return;
+
+    try {
+      const updates: Partial<FixedExpense> = { ...item };
+
+      if (editingCell.field === "name") updates.name = cellValue;
+      else if (editingCell.field === "category") updates.category = cellValue;
+      else if (editingCell.field === "billingDay") updates.billingDay = cellValue ? Number(cellValue) : null;
+      else if (editingCell.field === "amount") updates.amount = Number(cellValue);
+
+      await save({
+        id: item.id,
+        name: updates.name!,
+        amount: updates.amount!,
+        category: updates.category!,
+        billingDay: updates.billingDay,
+        notes: item.notes,
+      });
+
+      setStatus("Gasto fijo actualizado.");
+    } catch (err) {
+      console.error("Failed to update field", err);
+      setError("No se pudo actualizar el campo.");
+    } finally {
+      setEditingCell(null);
+    }
+  };
+
+  const handleCellKeyDown = (e: React.KeyboardEvent, item: FixedExpense) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleCellBlur(item);
+    } else if (e.key === "Escape") {
+      setEditingCell(null);
+    }
+  };
 
   return (
     <section className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
@@ -1618,25 +1666,87 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
             ) : items.length ? (
               items.map((item) => (
                 <tr key={item.id} className="border-t border-[var(--color-border)]">
-                  <td className="px-4 py-3 text-sm font-semibold text-[var(--color-foreground)]">{item.name}</td>
-                  <td className="px-4 py-3 text-sm text-[var(--color-foreground)]">{item.category}</td>
-                  <td className="px-4 py-3 text-sm text-[var(--color-foreground)]">{item.billingDay ?? ""}</td>
-                  <td className="px-4 py-3 text-sm font-semibold text-[var(--color-foreground)]">
-                    {formatCurrency(item.amount, currency)}
+                  <td
+                    className="cursor-pointer px-4 py-3 text-sm font-semibold text-[var(--color-foreground)] hover:bg-[var(--color-elevated)]"
+                    onClick={() => handleCellClick(item, "name")}
+                  >
+                    {editingCell?.id === item.id && editingCell.field === "name" ? (
+                      <input
+                        type="text"
+                        value={cellValue}
+                        onChange={(e) => setCellValue(e.target.value)}
+                        onBlur={() => handleCellBlur(item)}
+                        onKeyDown={(e) => handleCellKeyDown(e, item)}
+                        autoFocus
+                        className="w-full rounded border border-[var(--color-primary)] bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]"
+                      />
+                    ) : (
+                      item.name
+                    )}
+                  </td>
+                  <td
+                    className="cursor-pointer px-4 py-3 text-sm text-[var(--color-foreground)] hover:bg-[var(--color-elevated)]"
+                    onClick={() => handleCellClick(item, "category")}
+                  >
+                    {editingCell?.id === item.id && editingCell.field === "category" ? (
+                      <select
+                        value={cellValue}
+                        onChange={(e) => setCellValue(e.target.value)}
+                        onBlur={() => handleCellBlur(item)}
+                        onKeyDown={(e) => handleCellKeyDown(e, item)}
+                        autoFocus
+                        className="w-full rounded border border-[var(--color-primary)] bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]"
+                      >
+                        {categories.map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      item.category
+                    )}
+                  </td>
+                  <td
+                    className="cursor-pointer px-4 py-3 text-sm text-[var(--color-foreground)] hover:bg-[var(--color-elevated)]"
+                    onClick={() => handleCellClick(item, "billingDay")}
+                  >
+                    {editingCell?.id === item.id && editingCell.field === "billingDay" ? (
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={cellValue}
+                        onChange={(e) => setCellValue(e.target.value)}
+                        onBlur={() => handleCellBlur(item)}
+                        onKeyDown={(e) => handleCellKeyDown(e, item)}
+                        autoFocus
+                        className="w-full rounded border border-[var(--color-primary)] bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]"
+                      />
+                    ) : (
+                      item.billingDay ?? ""
+                    )}
+                  </td>
+                  <td
+                    className="cursor-pointer px-4 py-3 text-sm font-semibold text-[var(--color-foreground)] hover:bg-[var(--color-elevated)]"
+                    onClick={() => handleCellClick(item, "amount")}
+                  >
+                    {editingCell?.id === item.id && editingCell.field === "amount" ? (
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={cellValue}
+                        onChange={(e) => setCellValue(e.target.value)}
+                        onBlur={() => handleCellBlur(item)}
+                        onKeyDown={(e) => handleCellKeyDown(e, item)}
+                        autoFocus
+                        className="w-full rounded border border-[var(--color-primary)] bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]"
+                      />
+                    ) : (
+                      formatCurrency(item.amount, currency)
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setError(null);
-                          setStatus(null);
-                          setEditing(item);
-                        }}
-                        className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-foreground-muted)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-foreground)]"
-                      >
-                        <Edit className="h-3.5 w-3.5" /> Editar
-                      </button>
                       <button
                         type="button"
                         onClick={() => void handleDelete(item)}
