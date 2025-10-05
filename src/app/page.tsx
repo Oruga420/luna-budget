@@ -819,15 +819,15 @@ const EntriesSection = ({
         </DialogContent>
       </Dialog>
 
-      <div className="mt-6 grid gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-elevated)] p-4">
-        <div className="grid gap-3 md:grid-cols-3">
-          <label className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-foreground-muted)]">
-            <Search className="h-4 w-4" />
+      <div className="mt-6 grid gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-elevated)] p-3 sm:gap-4 sm:p-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <label className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-3 py-2 text-xs text-[var(--color-foreground-muted)] sm:text-sm">
+            <Search className="h-4 w-4 flex-shrink-0" />
             <input
               type="search"
               value={filters.search}
               onChange={(event) => updateFilters({ search: event.target.value })}
-              placeholder="Buscar por nombre o notas"
+              placeholder="Buscar"
               className="w-full border-none bg-transparent text-[var(--color-foreground)] placeholder:text-[var(--color-foreground-muted)] focus:outline-none"
             />
           </label>
@@ -835,7 +835,7 @@ const EntriesSection = ({
           <select
             value={filters.category}
             onChange={(event) => updateFilters({ category: event.target.value })}
-            className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none"
+            className="rounded-full border border-[var(--color-border)] bg-white px-3 py-2 text-xs text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none sm:px-4 sm:text-sm"
           >
             <option value="all">Todas las categorias</option>
             {categories.map((category) => (
@@ -848,7 +848,7 @@ const EntriesSection = ({
           <select
             value={filters.type}
             onChange={(event) => updateFilters({ type: event.target.value as EntryFilters["type"] })}
-            className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none"
+            className="rounded-full border border-[var(--color-border)] bg-white px-3 py-2 text-xs text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none sm:px-4 sm:text-sm"
           >
             <option value="all">Todos los tipos</option>
             <option value="variable">Variables</option>
@@ -856,20 +856,20 @@ const EntriesSection = ({
           </select>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr]">
+        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-3">
           <input
             type="date"
             value={filters.fromDate ?? ""}
             onChange={(event) => updateFilters({ fromDate: event.target.value || null })}
-            className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none"
+            className="rounded-full border border-[var(--color-border)] bg-white px-3 py-2 text-xs text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none sm:px-4 sm:text-sm"
             placeholder="Desde"
           />
-          <span className="flex items-center text-sm font-bold text-[var(--color-foreground-muted)]">a</span>
+          <span className="flex items-center text-xs font-bold text-[var(--color-foreground-muted)] sm:text-sm">a</span>
           <input
             type="date"
             value={filters.toDate ?? ""}
             onChange={(event) => updateFilters({ toDate: event.target.value || null })}
-            className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none"
+            className="rounded-full border border-[var(--color-border)] bg-white px-3 py-2 text-xs text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none sm:px-4 sm:text-sm"
             placeholder="Hasta"
           />
         </div>
@@ -891,17 +891,17 @@ const EntriesSection = ({
         </p>
       ) : null}
 
-      <div className="mt-6 overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
-          <thead className="text-xs uppercase tracking-wide text-[var(--color-foreground-muted)]">
+      <div className="mt-6 overflow-x-auto rounded-2xl border border-[var(--color-border)]">
+        <table className="min-w-full text-left text-xs sm:text-sm">
+          <thead className="text-[10px] uppercase tracking-wide text-[var(--color-foreground-muted)] sm:text-xs">
             <tr>
-              <th className="px-4 py-3">Fecha</th>
-              <th className="px-4 py-3">Item</th>
-              <th className="px-4 py-3">Categoria</th>
-              <th className="px-4 py-3">Tipo</th>
-              <th className="px-4 py-3">Monto</th>
-              <th className="px-4 py-3">Notas</th>
-              <th className="px-4 py-3 text-right">Acciones</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3">Fecha</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3">Item</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3">Categoria</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3">Tipo</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3">Monto</th>
+              <th className="hidden px-2 py-2 sm:table-cell sm:px-4 sm:py-3">Notas</th>
+              <th className="px-2 py-2 text-right sm:px-4 sm:py-3">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -916,25 +916,25 @@ const EntriesSection = ({
             ) : filteredEntries.length ? (
               filteredEntries.map((entry) => (
                 <tr key={entry.id} className="border-t border-[var(--color-border)] text-[var(--color-foreground)]">
-                  <td className="px-4 py-3 align-top text-sm font-medium">
+                  <td className="px-2 py-2 align-top text-xs font-medium sm:px-4 sm:py-3 sm:text-sm">
                     {formatDisplayDate(entry.dateIso)}
                   </td>
-                  <td className="px-4 py-3 align-top">
-                    <div className="font-semibold">{entry.itemName}</div>
-                    <p className="text-xs text-[var(--color-foreground-muted)]">
+                  <td className="px-2 py-2 align-top sm:px-4 sm:py-3">
+                    <div className="text-xs font-semibold sm:text-sm">{entry.itemName}</div>
+                    <p className="text-[10px] text-[var(--color-foreground-muted)] sm:text-xs">
                       {entry.source === "image" ? "Capturado desde foto" : "Ingreso manual"}
                     </p>
                   </td>
-                  <td className="px-4 py-3 align-top text-sm capitalize">{entry.category}</td>
-                  <td className="px-4 py-3 align-top text-sm">{expenseTypeLabels[entry.type]}</td>
-                  <td className="px-4 py-3 align-top font-semibold">
+                  <td className="px-2 py-2 align-top text-xs capitalize sm:px-4 sm:py-3 sm:text-sm">{entry.category}</td>
+                  <td className="px-2 py-2 align-top text-xs sm:px-4 sm:py-3 sm:text-sm">{expenseTypeLabels[entry.type]}</td>
+                  <td className="px-2 py-2 align-top text-xs font-semibold sm:px-4 sm:py-3 sm:text-sm">
                     {formatCurrency(entry.amount, entry.currency)}
                   </td>
-                  <td className="px-4 py-3 align-top text-sm text-[var(--color-foreground-muted)]">
+                  <td className="hidden px-2 py-2 align-top text-xs text-[var(--color-foreground-muted)] sm:table-cell sm:px-4 sm:py-3 sm:text-sm">
                     {entry.notes ? entry.notes : ""}
                   </td>
-                  <td className="px-4 py-3 align-top">
-                    <div className="flex justify-end gap-2">
+                  <td className="px-2 py-2 align-top sm:px-4 sm:py-3">
+                    <div className="flex justify-end gap-1 sm:gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -943,22 +943,22 @@ const EntriesSection = ({
                           setEditingEntry(entry);
                           setDialogOpen(true);
                         }}
-                        className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-foreground-muted)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-foreground)]"
+                        className="inline-flex items-center gap-0.5 rounded-full border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-foreground-muted)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-foreground)] sm:gap-1 sm:px-3 sm:text-xs"
                       >
-                        <Edit className="h-3.5 w-3.5" /> Editar
+                        <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> <span className="hidden sm:inline">Editar</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => void handleDelete(entry)}
                         disabled={deletingId === entry.id}
-                        className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-danger)] transition hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] disabled:cursor-not-allowed disabled:opacity-70"
+                        className="inline-flex items-center gap-0.5 rounded-full border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-danger)] transition hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] disabled:cursor-not-allowed disabled:opacity-70 sm:gap-1 sm:px-3 sm:text-xs"
                       >
                         {deletingId === entry.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="h-3 w-3 animate-spin sm:h-3.5 sm:w-3.5" />
                         ) : (
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         )}
-                        Borrar
+                        <span className="hidden sm:inline">Borrar</span>
                       </button>
                     </div>
                   </td>
@@ -983,10 +983,10 @@ const EntriesSection = ({
           setEditingEntry(null);
           setDialogOpen(true);
         }}
-        className="fixed bottom-8 right-8 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-[0_8px_16px_rgba(0,0,0,0.15)] transition hover:scale-105 hover:bg-[var(--color-primary-strong)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary-soft)]"
+        className="fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-[0_8px_16px_rgba(0,0,0,0.15)] transition hover:scale-105 hover:bg-[var(--color-primary-strong)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary-soft)] sm:bottom-8 sm:right-8 sm:h-16 sm:w-16"
         aria-label="Agregar movimiento"
       >
-        <Plus className="h-8 w-8" />
+        <Plus className="h-7 w-7 sm:h-8 sm:w-8" />
       </button>
     </section>
   );
@@ -1779,12 +1779,12 @@ export default function Home() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-12 sm:gap-10 sm:px-10">
-      <header className="flex flex-col gap-4">
-        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[var(--color-primary-soft)]/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-primary)]">
+    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:gap-10 lg:px-10 lg:py-12">
+      <header className="flex flex-col gap-3 sm:gap-4">
+        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[var(--color-primary-soft)]/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--color-primary)] sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.2em]">
           Luna Budget Keeper
         </span>
-        <h1 className="text-4xl font-black text-[var(--color-foreground)] sm:text-5xl">
+        <h1 className="text-2xl font-black text-[var(--color-foreground)] sm:text-3xl lg:text-4xl xl:text-5xl">
           Control total de tu presupuesto mensual
         </h1>
       </header>
@@ -1831,15 +1831,15 @@ export default function Home() {
           </div>
 
           {chartData.length > 0 && (
-            <section className="rounded-[24px] border-[3px] border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-black text-[var(--color-foreground)]">
+            <section className="rounded-[16px] border-[3px] border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-soft)] sm:rounded-[24px] sm:p-6">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-lg font-black text-[var(--color-foreground)] sm:text-xl">
                   Gastos por Categoría
                 </h2>
-                <div className="flex gap-2 rounded-[16px] border-[3px] border-[var(--color-border)] bg-[var(--color-elevated)] p-1">
+                <div className="flex gap-1 rounded-[12px] border-[3px] border-[var(--color-border)] bg-[var(--color-elevated)] p-1 sm:gap-2 sm:rounded-[16px]">
                   <button
                     onClick={() => setChartView("variable")}
-                    className={`rounded-[12px] px-4 py-2 text-xs font-bold uppercase tracking-wide transition ${
+                    className={`rounded-[8px] px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide transition sm:rounded-[12px] sm:px-4 sm:py-2 sm:text-xs ${
                       chartView === "variable"
                         ? "bg-[var(--color-primary)] text-white shadow-lg"
                         : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]"
@@ -1849,7 +1849,7 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => setChartView("all")}
-                    className={`rounded-[12px] px-4 py-2 text-xs font-bold uppercase tracking-wide transition ${
+                    className={`rounded-[8px] px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide transition sm:rounded-[12px] sm:px-4 sm:py-2 sm:text-xs ${
                       chartView === "all"
                         ? "bg-[var(--color-primary)] text-white shadow-lg"
                         : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)]"
@@ -1859,7 +1859,7 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={400}>
+              <ResponsiveContainer width="100%" height={300} className="sm:!h-[400px]">
                 <PieChart>
                   <Pie
                     data={chartData}
