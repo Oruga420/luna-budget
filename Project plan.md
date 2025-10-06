@@ -1,25 +1,25 @@
-# Budget App (Single-User, Local-First) — Especificación Técnica, Roadmap por Fases y Tickets
+# Budget App (Single-User, Local-First) ï¿½ Especificaciï¿½n Tï¿½cnica, Roadmap por Fases y Tickets
 
-> Paleta: naranja (#FF7A00/#FFA94D), amarillo (#FFD166/#FFE08C), turquesa (#1EC9C8/#79E0E0). Tipografía: Roboto.
+> Paleta: naranja (#FF7A00/#FFA94D), amarillo (#FFD166/#FFE08C), turquesa (#1EC9C8/#79E0E0). Tipografï¿½a: Roboto.
 
 ---
 
 ## 0) Resumen ejecutivo
 
-Aplicación web single-user para gestionar presupuesto mensual sin base de datos externa. Persistencia local-first (IndexedDB + LocalStorage) y exportación mensual automática a CSV. Ingesta de gastos manual y por foto con análisis vía OpenAI o3 para extraer item/importe/categoría sugerida. Alertas configurables por umbral del presupuesto. Visualización principal: gráfico de dona pseudo-3D animado (categorías por %). Deploy en Vercel (Next.js App Router, Edge/Serverless para llamadas al API de OpenAI si se requiere, pero sin almacenar datos del usuario en backend).
+Aplicaciï¿½n web single-user para gestionar presupuesto mensual con persistencia local y sync en la nube. Persistencia local-first (IndexedDB) + Vercel Blob para sync cross-device. Ingesta de gastos manual y por foto con anï¿½lisis vï¿½a Groq Llama 4 Maverick para extraer item/categorï¿½a sugerida. Alertas configurables por umbral del presupuesto. Visualizaciones: grï¿½fico de dona animado (categorï¿½as por %) + timeline de gastos diarios. Deploy en Vercel (Next.js 15 App Router con Edge Runtime).
 
 ---
 
 ## 1) Alcance (Scope)
 
-* **Usuario único**; no hay registro/login.
-* **Settings**: budget mensual, savings goal mensual, umbral de alerta (%), categorías personalizadas, gastos fijos.
-* **Gastos**: alta/edición/eliminación; tipo (Fijo/Variable); categoría; monto; fecha; adjuntar foto opcional.
-* **Ingesta por foto**: subir imagen -> o3 (2 llamadas) -> JSON estandarizado -> pre-llenado del form.
-* **Visualizaciones**: Dona 3D (categorías % del gasto mensual), línea de tiempo simple (gasto diario acumulado), tarjetas de breakdown.
+* **Usuario ï¿½nico**; no hay registro/login.
+* **Settings**: budget mensual, savings goal mensual, umbral de alerta (%), categorï¿½as personalizadas, gastos fijos.
+* **Gastos**: alta/ediciï¿½n/eliminaciï¿½n; tipo (Fijo/Variable); categorï¿½a; monto; fecha; adjuntar foto opcional.
+* **Ingesta por foto**: subir imagen -> Groq Llama 4 Maverick (1 llamada con JSON mode) -> JSON estandarizado -> pre-llenado del form.
+* **Visualizaciones**: Dona 3D (categorï¿½as % del gasto mensual), lï¿½nea de tiempo simple (gasto diario acumulado), tarjetas de breakdown.
 * **Alertas**: banner/perma-toast cuando se supera X% del budget; estado en home.
-* **Rollover mensual**: al detectar cambio de mes -> exportar CSV del mes anterior y archivar en IndexedDB; reset de agregados del mes (no borra el histórico).
-* **Export/Import**: export CSV del mes en curso y de meses previos; import CSV para restauración.
+* **Rollover mensual**: al detectar cambio de mes -> exportar CSV del mes anterior y archivar en IndexedDB; reset de agregados del mes (no borra el histï¿½rico).
+* **Export/Import**: export CSV del mes en curso y de meses previos; import CSV para restauraciï¿½n.
 * **Animaciones**: conteo regresivo del presupuesto restante; entrada de barras/segmentos; micro-interacciones al agregar gasto.
 
 Fuera de alcance inicial: multiusuario, sync en la nube, cuentas/roles, notificaciones push del sistema operativo.
@@ -30,12 +30,12 @@ Fuera de alcance inicial: multiusuario, sync en la nube, cuentas/roles, notifica
 
 * **Frontend**: Next.js 15 (App Router) + React 18.
 * **UI**: TailwindCSS + shadcn/ui + Framer Motion.
-* **Gráficos**: Recharts (dona), con capa de estilo para efecto 3D (sombreado radial/gradiente).
-* **Persistencia**: IndexedDB via `idb` (histórico y blobs de imágenes) + LocalStorage (flags/ajustes rápidos). Archivos CSV generados en el cliente (File API); opción de descarga.
-* **Procesamiento de imágenes**:
+* **Grï¿½ficos**: Recharts (dona), con capa de estilo para efecto 3D (sombreado radial/gradiente).
+* **Persistencia**: IndexedDB via `idb` (histï¿½rico y blobs de imï¿½genes) + LocalStorage (flags/ajustes rï¿½pidos). Archivos CSV generados en el cliente (File API); opciï¿½n de descarga.
+* **Procesamiento de imï¿½genes**:
 
   * Preferente **directo desde cliente a OpenAI** via edge function (Next.js Route Handler) para ocultar clave; *no* se persiste contenido en server.
-  * Alternativa privacy-strict: opción "procesar local" desactivada (placeholder) hasta que exista un modelo local.
+  * Alternativa privacy-strict: opciï¿½n "procesar local" desactivada (placeholder) hasta que exista un modelo local.
 * **Despliegue**: Vercel.
 * **Accesibilidad**: WCAG AA en colores/contraste.
 
@@ -49,7 +49,7 @@ id, date_iso, item_name, amount, currency, category, type, source, notes, image_
 
 * `type`: "fixed" | "variable"
 * `source`: "manual" | "image"
-* `image_ref`: key interna para IndexedDB (blob store) o dataURL efímero.
+* `image_ref`: key interna para IndexedDB (blob store) o dataURL efï¿½mero.
 * `month_key`: `YYYY-MM`
 
 **IndexedDB stores**:
@@ -62,127 +62,130 @@ id, date_iso, item_name, amount, currency, category, type, source, notes, image_
 
 ---
 
-## 3) Prompts y contrato con o3 (OpenAI)
+## 3) Procesamiento de imï¿½genes con Groq
 
-**Llamada 1 (descripción breve del ítem)**
+**Modelo**: Llama 4 Maverick (17B, 128K context, multimodal)
 
-* Instrucción: "Describe brevemente el objeto/servicio principal visible en la foto en 10 palabras o menos para usarlo como nombre de ítem. Solo el nombre, sin precio."
-* Salida esperada: string (ej. "Caja de cereal Corn Flakes").
+**Llamada ï¿½nica con JSON mode**
 
-**Llamada 2 (JSON estructurado)**
-
-* Instrucción: "Devuelve solo JSON válido con el siguiente schema. Si no sabes un campo, usa null. No inventes precios."
+* Instrucciï¿½n: "Analiza esta imagen de un recibo, ticket o producto y extrae la informaciï¿½n en formato JSON."
 
 ```json
 {
-  "item_name": "string",
-  "category_suggestion": "one of: [renta, internet, celular, comida, transporte, entretenimiento, weed, membresias, otros]",
-  "notes": "string | null"
+  "item_name": "nombre corto del producto o servicio (mï¿½ximo 10 palabras)",
+  "category_suggestion": "una de estas categorï¿½as: renta, internet, celular, comida, transporte, entretenimiento, weed, membresias, otros",
+  "notes": "observaciones adicionales relevantes o null si no hay"
 }
 ```
 
 * Post-proceso: el usuario ingresa `amount` manualmente (obligatorio).
+* Temperatura: 0.3 (mï¿½s determinista)
+* Max tokens: 300
 
-*Seguridad*: truncar contexto e imágenes; desactivar almacenamiento de logs en el backend.
+*Ventajas*:
+- 1 llamada vs 2 (mï¿½s rï¿½pido)
+- JSON mode nativo (mï¿½s confiable)
+- Hasta 10x mï¿½s rï¿½pido que GPT-4o
+- Soporte de imï¿½genes hasta 20MB
 
 ---
 
 ## 4) UX/UI
 
-* **Home**: header con budget restante (contador animado), progreso hacia savings goal, botón "+ Gasto", alerta de umbral si aplica.
-* **Gráfico dona 3D**: segmentos por categoría, leyenda con % y monto, hover con detalles.
-* **Lista de gastos**: filtros por categoría, rango de fechas, tipo; búsqueda por texto.
-* **Settings**: budget, savings goal, umbral, currency, gestión de categorías, CRUD de gastos fijos.
-* **Agregar gasto**: modal con tabs "Manual" / "Foto (o3)". En Foto: preview, resultados del LLM pre-llenan item/categoría/notas.
+* **Home**: header con budget restante (contador animado), progreso hacia savings goal, botï¿½n "+ Gasto", alerta de umbral si aplica.
+* **Grï¿½fico dona 3D**: segmentos por categorï¿½a, leyenda con % y monto, hover con detalles.
+* **Lista de gastos**: filtros por categorï¿½a, rango de fechas, tipo; bï¿½squeda por texto.
+* **Settings**: budget, savings goal, umbral, currency, gestiï¿½n de categorï¿½as, CRUD de gastos fijos.
+* **Agregar gasto**: modal con tabs "Manual" / "Foto (o3)". En Foto: preview, resultados del LLM pre-llenan item/categorï¿½a/notas.
 * **Tema**: base clara; primarios naranja/amarillo/turquesa; Roboto; esquinas 2xl; sombras suaves.
 
 ---
 
 ## 5) Roadmap por Fases
 
-### Fase 1 — Fundaciones & Persistencia Local
+### Fase 1 ï¿½ Fundaciones & Persistencia Local
 
-Objetivo: base Next.js, estado global, IndexedDB, settings mínimos, CSV export manual.
+Objetivo: base Next.js, estado global, IndexedDB, settings mï¿½nimos, CSV export manual.
 
 **Tickets**
 
 1. **F1-T1 | Bootstrap Next.js + Tailwind + shadcn + Framer**
 
    * *AC*: proyecto compila en Vercel preview; Tailwind y shadcn funcionando; fuente Roboto cargada.
-   * *Tests*: build Vercel OK; Lighthouse sin errores críticos; snapshot visual de home vacío.
+   * *Tests*: build Vercel OK; Lighthouse sin errores crï¿½ticos; snapshot visual de home vacï¿½o.
 
-2. **F1-T2 | Módulo de persistencia (IndexedDB + LocalStorage)**
+2. **F1-T2 | Mï¿½dulo de persistencia (IndexedDB + LocalStorage)**
 
-   * *AC*: helpers `db.get/set/list` para stores `settings`, `entries`, `archives`, `images`; versión de esquema con migración.
-   * *Tests*: crear/leer/actualizar/borrar entradas; simulación en Jest usando mock de IndexedDB.
+   * *AC*: helpers `db.get/set/list` para stores `settings`, `entries`, `archives`, `images`; versiï¿½n de esquema con migraciï¿½n.
+   * *Tests*: crear/leer/actualizar/borrar entradas; simulaciï¿½n en Jest usando mock de IndexedDB.
 
-3. **F1-T3 | Settings básicos (budget, savingsGoal, alertThresholdPct, currency)**
+3. **F1-T3 | Settings bï¿½sicos (budget, savingsGoal, alertThresholdPct, currency)**
 
    * *AC*: formulario con validaciones; guardar en IndexedDB; reflectar en header.
    * *Tests*: cambiar budget y ver header actualizar; reload conserva cambios.
 
 4. **F1-T4 | Export CSV manual del mes en curso**
 
-   * *AC*: botón Export; archivo incluye cabeceras del schema y filas.
-   * *Tests*: abrir CSV en Excel/Sheets sin corrupción; ver cantidad correcta de filas.
+   * *AC*: botï¿½n Export; archivo incluye cabeceras del schema y filas.
+   * *Tests*: abrir CSV en Excel/Sheets sin corrupciï¿½n; ver cantidad correcta de filas.
 
-### Fase 2 — Modelo de Datos de Gastos & CRUD
+### Fase 2 ï¿½ Modelo de Datos de Gastos & CRUD
 
-Objetivo: CRUD completo, categorías, gastos fijos.
+Objetivo: CRUD completo, categorï¿½as, gastos fijos.
 
 **Tickets**
 
 1. **F2-T1 | Schema de gasto + validaciones (Zod)**
 
    * *AC*: crear tipo fuerte; normalizar `date_iso`, `month_key`.
-   * *Tests*: entradas inválidas rechazan; fechas se normalizan a local TZ.
+   * *Tests*: entradas invï¿½lidas rechazan; fechas se normalizan a local TZ.
 
-2. **F2-T2 | CRUD de gastos (lista + filtros + búsqueda)**
+2. **F2-T2 | CRUD de gastos (lista + filtros + bï¿½squeda)**
 
-   * *AC*: crear/editar/eliminar/ver; filtros por categoría/tipo/fecha; búsqueda textual.
-   * *Tests*: añadir 10 gastos y filtrar por categoría; edición persiste; eliminación reduce conteo.
+   * *AC*: crear/editar/eliminar/ver; filtros por categorï¿½a/tipo/fecha; bï¿½squeda textual.
+   * *Tests*: aï¿½adir 10 gastos y filtrar por categorï¿½a; ediciï¿½n persiste; eliminaciï¿½n reduce conteo.
 
-3. **F2-T3 | Gestión de categorías personalizadas**
+3. **F2-T3 | Gestiï¿½n de categorï¿½as personalizadas**
 
-   * *AC*: crear/renombrar/eliminar categorías; migración de gastos afectados.
-   * *Tests*: renombrar "otros"->"hogar" y verificar actualización en todos los gastos.
+   * *AC*: crear/renombrar/eliminar categorï¿½as; migraciï¿½n de gastos afectados.
+   * *Tests*: renombrar "otros"->"hogar" y verificar actualizaciï¿½n en todos los gastos.
 
 4. **F2-T4 | CRUD de gastos fijos**
 
-   * *AC*: alta de fijos con `billingDay?`; auto-inyección mensual al iniciar mes.
+   * *AC*: alta de fijos con `billingDay?`; auto-inyecciï¿½n mensual al iniciar mes.
    * *Tests*: simular rollover y verificar que se agregan fijos del mes.
 
-### Fase 3 — Ingesta por Foto (OpenAI o3)
+### Fase 3 ï¿½ Ingesta por Foto (Groq Llama 4 Maverick) âœ… COMPLETADA
 
-Objetivo: flujo de foto->o3->JSON->pre-llenado.
+Objetivo: flujo de foto->Groq->JSON->pre-llenado.
 
-**Tickets**
+**Tickets COMPLETADOS**
 
-1. **F3-T1 | Route Handler /api/vision (Edge) + SDK OpenAI**
+1. **F3-T1 | Route Handler /api/vision (Edge) + SDK Groq** âœ…
 
-   * *AC*: endpoint recibe imagen (multipart), llama o3 2 veces (nombre y JSON), retorna `{ item_name, category_suggestion, notes }`.
-   * *Tests*: mock de OpenAI; test de error por imagen vacía; timeouts manejados.
+   * *AC*: endpoint recibe imagen (multipart), llama Llama 4 Maverick con JSON mode (1 llamada), retorna `{ item_name, category_suggestion, notes }`.
+   * *Implementado*: Edge runtime, Groq SDK, max 4MB, JSON mode nativo.
 
-2. **F3-T2 | UI de carga de imagen + pre-llenado**
+2. **F3-T2 | UI de carga de imagen + pre-llenado** âœ…
 
-   * *AC*: arrastrar/soltar o picker; preview; al retornar, pre-llenar ítems del form.
-   * *Tests*: subir PNG/JPG; cancelar borra estado; pre-llenado editable.
+   * *AC*: arrastrar/soltar o picker; preview; al retornar, pre-llenar ï¿½tems del form.
+   * *Implementado*: Drag & drop, preview con thumbnail, AI loading state, pre-llenado editable.
 
-3. **F3-T3 | Política de privacidad (no persist server)**
+3. **F3-T3 | Polï¿½tica de privacidad (no persist server)** âœ…
 
-   * *AC*: clave protegida; server no guarda blobs; borrar buffers tras respuesta.
-   * *Tests*: inspección de código y logs; auditoría básica sin writes a disco.
+   * *AC*: clave protegida en env vars; server no guarda blobs; borrar buffers tras respuesta.
+   * *Implementado*: GROQ_API_KEY en Vercel env, edge runtime (no disk), imï¿½genes solo en memoria.
 
-### Fase 4 — Cálculos, Alertas y Animaciones
+### Fase 4 ï¿½ Cï¿½lculos, Alertas y Animaciones
 
 Objetivo: KPIs, umbrales, micro-interacciones.
 
 **Tickets**
 
-1. **F4-T1 | Agregados mensuales (restante, gastado, % por categoría)**
+1. **F4-T1 | Agregados mensuales (restante, gastado, % por categorï¿½a)**
 
-   * *AC*: select por `month_key`; cálculo de totales/percentiles; memoization.
-   * *Tests*: dataset sintético valida % sumando 100±0.1.
+   * *AC*: select por `month_key`; cï¿½lculo de totales/percentiles; memoization.
+   * *Tests*: dataset sintï¿½tico valida % sumando 100ï¿½0.1.
 
 2. **F4-T2 | Alertas por umbral**
 
@@ -191,12 +194,12 @@ Objetivo: KPIs, umbrales, micro-interacciones.
 
 3. **F4-T3 | Animaciones (Framer) en contador y alta de gasto**
 
-   * *AC*: número restante cuenta hacia abajo; confeti/impulso al guardar; accesible (prefers-reduced-motion).
+   * *AC*: nï¿½mero restante cuenta hacia abajo; confeti/impulso al guardar; accesible (prefers-reduced-motion).
    * *Tests*: snapshot con motion disabled; no jank a 60fps en desktop medio.
 
-### Fase 5 — Visualizaciones (Dona 3D + Timeline)
+### Fase 5 ï¿½ Visualizaciones (Dona 3D + Timeline)
 
-Objetivo: gráficos pulidos.
+Objetivo: grï¿½ficos pulidos.
 
 **Tickets**
 
@@ -207,33 +210,64 @@ Objetivo: gráficos pulidos.
 
 2. **F5-T2 | Timeline de gasto diario acumulado**
 
-   * *AC*: línea/área simple; hover con total/día; toggle Mostrar.
-   * *Tests*: suma por día respeta zona horaria; vacíos muestran 0.
+   * *AC*: lï¿½nea/ï¿½rea simple; hover con total/dï¿½a; toggle Mostrar.
+   * *Tests*: suma por dï¿½a respeta zona horaria; vacï¿½os muestran 0.
 
-### Fase 6 — Rollover Mensual, Archivo y Backup
+### Fase 6 ï¿½ Rollover Mensual, Archivo y Backup
 
 Objetivo: cierre y reseteo mensual no destructivo.
 
 **Tickets**
 
-1. **F6-T1 | Detección de cambio de mes**
+1. **F6-T1 | Detecciï¿½n de cambio de mes**
 
-   * *AC*: al abrir en nuevo mes -> banner "Cerrar mes anterior"; acción genera CSV y lo archiva en IndexedDB + descarga.
+   * *AC*: al abrir en nuevo mes -> banner "Cerrar mes anterior"; acciï¿½n genera CSV y lo archiva en IndexedDB + descarga.
    * *Tests*: mock de fecha cruza 31->01; crea archivo con nombre `budget-YYYY-MM.csv`.
 
-2. **F6-T2 | Auto-inyección de gastos fijos del mes**
+2. **F6-T2 | Auto-inyecciï¿½n de gastos fijos del mes**
 
-   * *AC*: tras cierre, crear registros "fixed" del mes con `date_iso` en `billingDay` o día 1.
+   * *AC*: tras cierre, crear registros "fixed" del mes con `date_iso` en `billingDay` o dï¿½a 1.
    * *Tests*: lista contiene fijos; no duplica si se ejecuta dos veces (idempotente).
 
 3. **F6-T3 | Import/Restore CSV**
 
-   * *AC*: cargar CSV con schema válido -> hidratar `entries` del `month_key` correspondiente.
+   * *AC*: cargar CSV con schema vï¿½lido -> hidratar `entries` del `month_key` correspondiente.
    * *Tests*: archivo corrupto rechaza con error claro; conteo de filas coincide.
 
-### Fase 7 — Pulido, PWA Lite y Deploy Final
+### Fase 6.5 ï¿½ Cloud Sync (Vercel Blob) âœ… COMPLETADA
 
-Objetivo: experiencia fina y publicación.
+Objetivo: sincronizaciï¿½n cross-device sin autenticaciï¿½n.
+
+**Tickets COMPLETADOS**
+
+1. **F6.5-T1 | Vercel Blob storage setup** âœ…
+
+   * *AC*: configurar @vercel/blob, crear /api/data endpoints (GET/POST).
+   * *Implementado*: Edge runtime, list() para encontrar blob, manejo de errores robusto.
+
+2. **F6.5-T2 | useServerSync hook** âœ…
+
+   * *AC*: hook para loadFromServer() y saveToServer(); estado de sync/loading/error.
+   * *Implementado*: hook con callbacks, manejo de errores, estado reactivo.
+
+3. **F6.5-T3 | Manual sync button** âœ…
+
+   * *AC*: botï¿½n en Settings para sincronizar manualmente; feedback visual.
+   * *Implementado*: SyncButton component con estado de carga, mensajes de ï¿½xito/error.
+
+4. **F6.5-T4 | Hydration on mount** âœ…
+
+   * *AC*: al cargar app, fetch data del blob y poblar IndexedDB automï¿½ticamente.
+   * *Implementado*: useEffect de hidrataciï¿½n con putEntry() directo, sin recalcular.
+
+5. **F6.5-T5 | Mobile responsive design** âœ…
+
+   * *AC*: UI funciona correctamente en mï¿½viles, padding y tamaï¿½os adaptados.
+   * *Implementado*: Responsive en todos los componentes, navegaciï¿½n adaptada.
+
+### Fase 7 ï¿½ Pulido, PWA Lite y Deploy Final
+
+Objetivo: experiencia fina y publicaciï¿½n.
 
 **Tickets**
 
@@ -242,42 +276,43 @@ Objetivo: experiencia fina y publicación.
    * *AC*: tokens Tailwind; contrast AA; modo alto contraste opcional.
    * *Tests*: axe DevTools sin violaciones severas de color.
 
-2. **F7-T2 | PWA lite (manifest + offline básico)**
+2. **F7-T2 | PWA lite (manifest + offline bï¿½sico)**
 
-   * *AC*: iconos, manifest, cache estático; sin cachear datos.
+   * *AC*: iconos, manifest, cache estï¿½tico; sin cachear datos.
    * *Tests*: Lighthouse PWA passes; instala en desktop/mobile.
 
 3. **F7-T3 | Deploy Vercel + checklist**
 
-   * *AC*: variables de entorno para OpenAI; pagespeed > 85; error boundaries implementados.
-   * *Tests*: smoke e2e (Playwright) cubre: agregar gasto manual, por foto, export CSV, cambiar settings.
+   * *AC*: variables de entorno para GROQ_API_KEY; pagespeed > 85; error boundaries implementados.
+   * *Tests*: smoke e2e (Playwright) cubre: agregar gasto manual, por foto, export CSV, cambiar settings, sync cross-device.
 
 ---
 
-## 6) Criterios de aceptación globales
+## 6) Criterios de aceptaciï¿½n globales
 
 * Todos los datos del usuario residen en el cliente (IndexedDB/LocalStorage).
-* La app funciona sin conexión para ver datos ya cargados y agregar gastos manuales; la ingesta por foto requiere conexión.
-* Exportación CSV produce archivos válidos, abribles y con headers correctos.
-* Gráfico dona 3D refleja en tiempo real los cambios.
+* La app funciona sin conexiï¿½n para ver datos ya cargados y agregar gastos manuales; la ingesta por foto requiere conexiï¿½n.
+* Exportaciï¿½n CSV produce archivos vï¿½lidos, abribles y con headers correctos.
+* Grï¿½fico dona 3D refleja en tiempo real los cambios.
 * Alertas por umbral aparecen de forma consistente y no intrusiva.
 
 ---
 
 ## 7) Casos de prueba (end-to-end)
 
-1. **Alta manual simple**: set budget $1000; agregar gasto comida $50 -> restante $950; dona muestra categoría.
+1. **Alta manual simple**: set budget $1000; agregar gasto comida $50 -> restante $950; dona muestra categorï¿½a.
 2. **Umbral**: threshold 50%; cargar gastos hasta $600/$1000 -> aparece banner.
-3. **Foto**: subir imagen de ticket/objeto -> o3 devuelve `item_name` y `category_suggestion`; usuario ingresa $; se crea registro con `source=image`.
-4. **Rollover**: cambiar fecha del sistema a nuevo mes; cerrar mes -> descarga CSV; fijos se auto-inyectan; dashboard vuelve a cero gastos variables.
-5. **Import**: importar CSV válido de mes pasado -> entries visibles al filtrar por ese `month_key`.
+3. **Foto**: subir imagen de ticket/objeto -> Groq Llama 4 Maverick devuelve `item_name` y `category_suggestion` en JSON; usuario ingresa $; se crea registro con `source=image`.
+4. **Cloud Sync**: agregar gasto en laptop -> click "Sincronizar Ahora" -> abrir en mï¿½vil -> datos aparecen automï¿½ticamente.
+5. **Rollover**: cambiar fecha del sistema a nuevo mes; cerrar mes -> descarga CSV; fijos se auto-inyectan; dashboard vuelve a cero gastos variables.
+5. **Import**: importar CSV vï¿½lido de mes pasado -> entries visibles al filtrar por ese `month_key`.
 
 ---
 
 ## 8) Seguridad y privacidad
 
-* Clave OpenAI solo en serverless edge handler; CORS estricto; tamaño máx de imagen; purga inmediata de buffers.
-* Sin analítica por defecto; toggle opcional con consentimiento.
+* Clave OpenAI solo en serverless edge handler; CORS estricto; tamaï¿½o mï¿½x de imagen; purga inmediata de buffers.
+* Sin analï¿½tica por defecto; toggle opcional con consentimiento.
 
 ---
 
@@ -292,17 +327,17 @@ Objetivo: experiencia fina y publicación.
 
 ## 10) Backlog (v2+)
 
-* Clasificación automática de categoría vía embeddings.
-* Reglas/Presupuestos por categoría.
+* Clasificaciï¿½n automï¿½tica de categorï¿½a vï¿½a embeddings.
+* Reglas/Presupuestos por categorï¿½a.
 * Recordatorios locales tipo calendario.
-* Sincronización opcional (Vercel Blob) -> requiere consentimiento.
+* Sincronizaciï¿½n opcional (Vercel Blob) -> requiere consentimiento.
 
 ---
 
 ## 11) Definition of Done (por fase)
 
 * Todos los tickets de fase con AC cumplidos.
-* Pruebas unitarias > 80% en módulos críticos (persistencia, cálculos).
-* E2E básicos verdes en CI.
-* Revisión UX visual (paleta/animaciones) aprobada.
+* Pruebas unitarias > 80% en mï¿½dulos crï¿½ticos (persistencia, cï¿½lculos).
+* E2E bï¿½sicos verdes en CI.
+* Revisiï¿½n UX visual (paleta/animaciones) aprobada.
 

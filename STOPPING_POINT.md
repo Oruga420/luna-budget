@@ -10,13 +10,14 @@
 
 Luna Budget Keeper is a **single-user, local-first budget tracking web application** built with Next.js 15, featuring:
 
-- Manual and AI-powered (OpenAI GPT-4o) expense entry via photo analysis
+- Manual and AI-powered (Groq Llama 4 Maverick) expense entry via photo analysis
 - Real-time budget tracking with IndexedDB persistence
 - **Cloud sync via Vercel Blob** for cross-device access
 - Interactive visualizations (donut chart, timeline)
 - Animated UI with Framer Motion
 - CSV export functionality
 - Spanish language interface
+- Fully responsive design (mobile-first)
 
 **Live App**: https://lunas-budget.vercel.app
 **Repository**: https://github.com/Oruga420/luna-budget
@@ -42,9 +43,9 @@ Luna Budget Keeper is a **single-user, local-first budget tracking web applicati
 - ✅ Inline editing for fixed expenses
 
 #### **Phase 3: Photo Ingestion (100%)**
-- ✅ `/api/vision` route handler with OpenAI GPT-4o
+- ✅ `/api/vision` route handler with Groq Llama 4 Maverick
 - ✅ Image upload UI with drag-and-drop
-- ✅ Two-step AI processing (name extraction + structured JSON)
+- ✅ Single-call AI processing with JSON mode (faster than GPT-4o)
 - ✅ Form pre-fill from AI results
 
 #### **Phase 4: Animations & Alerts (100%)**
@@ -103,7 +104,7 @@ Data Persistence:
 └── Vercel Blob - Cloud sync
 
 APIs:
-├── OpenAI GPT-4o (vision analysis)
+├── Groq Llama 4 Maverick (vision analysis)
 └── Vercel Edge Runtime
 
 Visualization:
@@ -255,15 +256,14 @@ export async function removeCategory(target: string, fallback: string): Promise<
 #### **/api/vision** - AI Image Processing
 
 **Runtime**: Edge
-**Model**: GPT-4o (not o3 as originally planned)
+**Model**: Groq Llama 4 Maverick (17B, 128K context, multimodal)
 
 **Flow**:
 1. Receives image via `FormData`
 2. Validates size (max 4MB)
 3. Converts to base64 data URL
-4. **Call 1**: Extract item name (max 50 tokens)
-5. **Call 2**: Extract structured JSON (max 150 tokens)
-6. Returns combined result
+4. **Single call** with JSON mode: Extract all data (max 300 tokens, temp 0.3)
+5. Returns structured result
 
 ```typescript
 // Response format
@@ -275,6 +275,12 @@ export async function removeCategory(target: string, fallback: string): Promise<
 ```
 
 **Categories**: renta, internet, celular, comida, transporte, entretenimiento, weed, membresias, otros
+
+**Advantages over GPT-4o**:
+- 1 API call vs 2 (faster response)
+- Native JSON mode (more reliable)
+- Up to 10x faster inference
+- Supports images up to 20MB
 
 #### **/api/data** - Cloud Sync
 
@@ -605,8 +611,8 @@ Save
 ## 🔌 Environment Variables
 
 ```bash
-# OpenAI API Key (required for /api/vision)
-OPENAI_API_KEY=sk-...
+# Groq API Key (required for /api/vision)
+GROQ_API_KEY=gsk_...
 
 # Vercel Blob Storage (required for /api/data)
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
@@ -615,7 +621,9 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
 **Setup in Vercel**:
 1. Go to project settings
 2. Environment Variables tab
-3. Add both variables
+3. Add both variables:
+   - `GROQ_API_KEY`: Get from https://console.groq.com
+   - `BLOB_READ_WRITE_TOKEN`: Auto-generated when creating Blob store
 4. Redeploy
 
 ---
@@ -848,7 +856,7 @@ const allEntries = [...currentEntries, ...fixedEntriesAsBudget];
 
 ### API Keys
 
-- OpenAI key stored in Vercel environment variables
+- Groq API key stored in Vercel environment variables
 - Never exposed to client-side code
 - Edge functions proxy requests
 
@@ -857,7 +865,7 @@ const allEntries = [...currentEntries, ...fixedEntriesAsBudget];
 - All user data in IndexedDB (client-side)
 - Vercel Blob data is public but unguessable (single blob file)
 - No user tracking or analytics
-- Images processed by OpenAI are not persisted
+- Images processed by Groq are not persisted (processed in-memory only)
 
 ### CORS
 
@@ -880,7 +888,7 @@ const allEntries = [...currentEntries, ...fixedEntriesAsBudget];
   "idb": "^8.0.0",
   "lucide-react": "^0.474.0",
   "next": "15.5.4",
-  "openai": "^4.77.3",
+  "groq-sdk": "^0.8.0",
   "react": "19.1.0",
   "react-dom": "19.1.0",
   "recharts": "^3.2.1",
@@ -952,7 +960,7 @@ const allEntries = [...currentEntries, ...fixedEntriesAsBudget];
 - npm or pnpm
 - Git
 - Vercel account (for deployment)
-- OpenAI API key (for vision features)
+- Groq API key (for vision features - get from https://console.groq.com)
 
 ### Setup Steps
 
@@ -970,7 +978,7 @@ const allEntries = [...currentEntries, ...fixedEntriesAsBudget];
 3. **Environment variables**:
    ```bash
    # Create .env.local
-   echo "OPENAI_API_KEY=sk-your-key" > .env.local
+   echo "GROQ_API_KEY=gsk_your-key" > .env.local
    echo "BLOB_READ_WRITE_TOKEN=vercel_blob_token" >> .env.local
    ```
 
@@ -1070,7 +1078,8 @@ Private project - All rights reserved
 
 - **Next.js Team**: Framework
 - **Vercel**: Hosting & Blob storage
-- **OpenAI**: GPT-4o vision model
+- **Groq**: Llama 4 Maverick vision model (ultra-fast inference)
+- **Meta**: Llama 4 foundation model
 - **Recharts**: Charting library
 - **Framer Motion**: Animation library
 - **Radix UI**: Accessible components

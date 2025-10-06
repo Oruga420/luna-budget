@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+// Initialize Groq client
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
 // Available categories as per project plan
@@ -49,72 +49,46 @@ export async function POST(request: NextRequest) {
     const mimeType = imageFile.type || "image/jpeg";
     const dataUrl = `data:${mimeType};base64,${base64Image}`;
 
-    console.log("Processing image with OpenAI Vision API...");
+    console.log("Processing image with Groq Llama 4 Maverick...");
 
-    // Call 1: Get item name description
-    const descriptionResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
+    // Single call with JSON mode to get all data
+    const completion = await groq.chat.completions.create({
+      model: "meta-llama/llama-4-maverick-17b-128e-instruct",
       messages: [
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Describe brevemente el objeto/servicio principal visible en la foto en 10 palabras o menos para usarlo como nombre de ítem. Solo el nombre, sin precio. Si es un ticket o recibo, describe el producto o servicio comprado.",
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: dataUrl,
-                detail: "low",
-              },
-            },
-          ],
-        },
-      ],
-      max_tokens: 50,
-      temperature: 0.3,
-    });
+              text: `Analiza esta imagen de un recibo, ticket o producto y extrae la información en formato JSON.
 
-    const itemName = descriptionResponse.choices[0]?.message?.content?.trim() || "";
-
-    console.log("Item name extracted:", itemName);
-
-    // Call 2: Get structured JSON data
-    const structuredResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Devuelve solo JSON válido con el siguiente schema. Si no sabes un campo, usa null. No inventes precios. Las categorías disponibles son: ${AVAILABLE_CATEGORIES.join(", ")}.
-
+Devuelve un objeto JSON con esta estructura exacta:
 {
-  "item_name": "string",
-  "category_suggestion": "one of: [${AVAILABLE_CATEGORIES.join(", ")}]",
-  "notes": "string | null"
-}`,
+  "item_name": "nombre corto del producto o servicio (máximo 10 palabras)",
+  "category_suggestion": "una de estas categorías: ${AVAILABLE_CATEGORIES.join(", ")}",
+  "notes": "observaciones adicionales relevantes o null si no hay"
+}
+
+Si es un recibo/ticket, usa el nombre del establecimiento o producto principal.
+Si no puedes determinar algo, usa null.
+NO inventes información.`,
             },
             {
               type: "image_url",
               image_url: {
                 url: dataUrl,
-                detail: "low",
               },
             },
           ],
         },
       ],
-      max_tokens: 150,
       temperature: 0.3,
+      max_completion_tokens: 300,
       response_format: { type: "json_object" },
     });
 
-    const structuredContent = structuredResponse.choices[0]?.message?.content || "{}";
-
-    console.log("Structured response:", structuredContent);
+    const content = completion.choices[0]?.message?.content || "{}";
+    console.log("Groq response:", content);
 
     let parsedData: {
       item_name?: string;
@@ -123,9 +97,9 @@ export async function POST(request: NextRequest) {
     };
 
     try {
-      parsedData = JSON.parse(structuredContent);
+      parsedData = JSON.parse(content);
     } catch (err) {
-      console.error("Failed to parse OpenAI JSON response:", err);
+      console.error("Failed to parse Groq JSON response:", err);
       parsedData = {};
     }
 
@@ -136,9 +110,9 @@ export async function POST(request: NextRequest) {
         ? parsedData.category_suggestion
         : AVAILABLE_CATEGORIES[AVAILABLE_CATEGORIES.length - 1]; // Default to "otros"
 
-    // Combine results
+    // Build result
     const result = {
-      item_name: itemName || parsedData.item_name || "Item sin nombre",
+      item_name: parsedData.item_name || "Item sin nombre",
       category_suggestion: categorySuggestion,
       notes: parsedData.notes || null,
     };

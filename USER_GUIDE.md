@@ -182,13 +182,14 @@ Hay **dos formas** de agregar gastos:
 6. **Procesar con AI**:
    - Tap "Procesar Imagen" (botón azul)
    - Loading... ⏳
-   - La AI (GPT-4o) analiza tu foto
+   - La AI (Groq Llama 4 Maverick) analiza tu foto en segundos
 
 7. **Resultados**:
    - **Ítem**: La AI sugiere un nombre
    - **Categoría**: Sugerencia automática
    - **Notas**: Detalles opcionales extraídos
    - **⚠️ Importante**: ¡Debes ingresar el MONTO manualmente!
+   - **✨ Nota**: Groq procesa hasta 10x más rápido que otros modelos
 
 8. **Editar y Guardar**:
    - Cambia a tab "MANUAL"
@@ -467,7 +468,7 @@ La app usa **Vercel Blob** para almacenar tus datos en la nube:
 1. Imagen muy grande (>4MB)
 2. Formato no soportado
 3. Sin conexión a internet
-4. API key de OpenAI inválida (problema del servidor)
+4. API key de Groq inválida (problema del servidor - contactar admin)
 
 **Soluciones**:
 1. Reduce tamaño de imagen
@@ -554,10 +555,11 @@ La app usa **Vercel Blob** para almacenar tus datos en la nube:
 ### ¿Qué pasa con las fotos?
 
 **Procesamiento**:
-- Se envían a OpenAI para análisis
-- OpenAI NO almacena las imágenes (configurado así)
-- Resultados regresan como JSON
-- Fotos NO se guardan en el servidor
+- Se envían a Groq (Llama 4 Maverick) para análisis
+- Groq procesa en memoria, NO almacena imágenes
+- Resultados regresan como JSON estructurado
+- Fotos NO se guardan en el servidor (solo en memoria durante el procesamiento)
+- Procesamiento ultra-rápido (hasta 10x más rápido que otros modelos)
 
 **Local**:
 - Puedes almacenar fotos localmente (feature planeada)
@@ -734,7 +736,7 @@ R: No en v1.0. Feature planeada para v2.
 
 **CSV**: Comma-Separated Values (formato de archivo para Excel/Sheets)
 
-**AI/GPT-4o**: Inteligencia artificial que analiza fotos
+**AI/Groq/Llama**: Inteligencia artificial que analiza fotos (Groq Llama 4 Maverick)
 
 **Hydrate**: Cargar datos del servidor al almacenamiento local
 
