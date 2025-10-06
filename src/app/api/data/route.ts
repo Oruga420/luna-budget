@@ -76,15 +76,26 @@ export async function GET() {
 // POST - Save data to blob storage
 export async function POST(request: NextRequest) {
   try {
+    console.log("POST /api/data - Starting save...");
     const data = await request.json();
+
+    console.log("POST /api/data - Data received:", {
+      hasSettings: !!data.settings,
+      entriesCount: data.entries?.length || 0,
+      fixedExpensesCount: data.fixedExpenses?.length || 0,
+      categoriesCount: data.categories?.length || 0,
+    });
 
     // Validate data structure
     if (!data || typeof data !== "object") {
+      console.error("POST /api/data - Invalid data format");
       return NextResponse.json(
         { error: "Invalid data format" },
         { status: 400 }
       );
     }
+
+    console.log("POST /api/data - Uploading to blob...");
 
     // Upload to Vercel Blob
     const blob = await put(BLOB_KEY, JSON.stringify(data), {
@@ -92,12 +103,17 @@ export async function POST(request: NextRequest) {
       contentType: "application/json",
     });
 
+    console.log("POST /api/data - Blob created successfully:", {
+      url: blob.url,
+      key: BLOB_KEY,
+    });
+
     return NextResponse.json({
       success: true,
       url: blob.url,
     });
   } catch (error) {
-    console.error("Error saving data:", error);
+    console.error("POST /api/data - Error saving data:", error);
     return NextResponse.json(
       { error: "Failed to save data" },
       { status: 500 }
