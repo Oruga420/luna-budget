@@ -1208,9 +1208,9 @@ const EntriesSection = ({
                   <td className="px-2 py-2 align-top text-xs sm:px-4 sm:py-3 sm:text-sm">{expenseTypeLabels[entry.type]}</td>
                   <td className="px-2 py-2 align-top text-xs font-semibold sm:px-4 sm:py-3 sm:text-sm"
                     style={{
-                      color: entry.currency === "USD" && entry.amount >= 150
+                      color: entry.currency === "CAD" && entry.amount >= 150
                         ? "#dc2626"
-                        : entry.currency === "USD" && entry.amount >= 100
+                        : entry.currency === "CAD" && entry.amount >= 100
                         ? "#ea580c"
                         : undefined
                     }}
