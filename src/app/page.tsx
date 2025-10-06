@@ -355,6 +355,89 @@ const SettingsForm = () => {
   );
 };
 
+const SyncButton = ({
+  serverSync,
+  settings,
+  entries,
+  fixedExpenses,
+  categories,
+}: {
+  serverSync: ReturnType<typeof useServerSync>;
+  settings: BudgetSettings | null;
+  entries: BudgetEntry[];
+  fixedExpenses: FixedExpense[];
+  categories: string[];
+}) => {
+  const [status, setStatus] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setStatus(null);
+    setSyncing(true);
+
+    try {
+      console.log("Manual sync triggered...");
+
+      // Save to server
+      const success = await serverSync.saveToServer({
+        settings,
+        entries,
+        fixedExpenses,
+        categories,
+      });
+
+      if (success) {
+        setStatus("✅ Datos sincronizados con el servidor");
+        console.log("Manual sync successful");
+      } else {
+        setStatus("❌ Error al sincronizar");
+      }
+    } catch (error) {
+      console.error("Manual sync error:", error);
+      setStatus("❌ Error al sincronizar");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)]">
+      <div className="flex items-center gap-2">
+        <Upload className="h-5 w-5 text-[var(--color-accent)]" />
+        <h2 className="text-lg font-semibold text-[var(--color-foreground)]">
+          Sincronización en la Nube
+        </h2>
+      </div>
+      <p className="mt-2 text-sm text-[var(--color-foreground-muted)]">
+        Tus datos se sincronizan automáticamente. Usa este botón para forzar una sincronización inmediata.
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSync}
+          disabled={syncing || !settings}
+          className="flex items-center gap-2 rounded-full border border-transparent bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-[#17b3b3] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          {syncing ? "Sincronizando..." : "Sincronizar Ahora"}
+        </button>
+
+        {status && (
+          <p className={`text-sm font-medium ${status.includes("✅") ? "text-[var(--color-accent)]" : "text-[var(--color-danger)]"}`}>
+            {status}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4 text-xs text-[var(--color-foreground-muted)]">
+        <p>Estado: {serverSync.loading ? "Cargando..." : serverSync.syncing ? "Sincronizando..." : "Listo"}</p>
+        {serverSync.error && <p className="mt-1 text-[var(--color-danger)]">Error: {serverSync.error}</p>}
+      </div>
+    </div>
+  );
+};
+
 const ExportButton = ({
   monthKey,
   entries,
@@ -2547,6 +2630,13 @@ export default function Home() {
       ) : (
         <div className="grid gap-6">
           <SettingsForm />
+          <SyncButton
+            serverSync={serverSync}
+            settings={settings}
+            entries={entriesManager.entries}
+            fixedExpenses={fixedExpensesManager.items}
+            categories={categories}
+          />
           <ExportButton
             monthKey={monthKey}
             entries={entriesManager.entries}
