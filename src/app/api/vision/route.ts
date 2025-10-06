@@ -62,11 +62,13 @@ export async function POST(request: NextRequest) {
               type: "text",
               text: `Analiza esta imagen de un recibo, ticket o producto y extrae la información en formato JSON.
 
-INSTRUCCIONES:
-1. Lee TODO el texto del recibo cuidadosamente
-2. Busca el MONTO TOTAL (puede estar como "Total", "Net total", "Amount", "Gross total", etc.)
-3. Si encuentras HST/GST/tax, busca el subtotal o total final
-4. El monto puede estar en cualquier parte del recibo
+INSTRUCCIONES CRÍTICAS PARA EL MONTO:
+1. Lee TODO el texto del recibo de ARRIBA A ABAJO
+2. Busca el MONTO FINAL que pagó el cliente (el último monto, después de todos los impuestos)
+3. IGNORA subtotales, ignora montos antes de taxes
+4. El monto correcto es el que aparece DESPUÉS de HST/GST/Sales Tax
+5. Busca etiquetas como: "Net total", "Total", "Amount due", "Final amount", "Payment"
+6. Si hay HST 13% $2.42, el monto correcto es el MAYOR (después del impuesto)
 
 Devuelve un objeto JSON con esta estructura exacta:
 {
@@ -76,11 +78,13 @@ Devuelve un objeto JSON con esta estructura exacta:
   "notes": "observaciones adicionales o null"
 }
 
-IMPORTANTE:
+REGLAS IMPORTANTES:
 - "amount" debe ser un NÚMERO, no string
-- Si ves "Gross total $21.00", pon amount: 21.00
-- Si ves "Net total $18.58", pon amount: 18.58
-- Si no encuentras el monto, pon amount: null
+- SIEMPRE usa el monto DESPUÉS de impuestos (el más grande)
+- Si ves "Period 0d6h38' $21.00" Y "H.S.T 13% $2.42" Y "Net total $18.58", usa 21.00 (es el Gross total)
+- Si ves "Gross total $21.00", usa 21.00
+- Si ves "Net total $18.58" y NO hay Gross total, usa 18.58
+- El "Net total" puede ser ANTES de impuestos, busca el monto más grande al final
 - Para estacionamiento/parking, usa categoría "transporte"
 - Para restaurantes/comida, usa "comida"`,
             },
