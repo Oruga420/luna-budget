@@ -159,12 +159,12 @@ const SummaryCard = ({
       initial={shouldReduceMotion ? undefined : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: shouldReduceMotion ? 0 : 0.5 }}
-      className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-soft)]"
+      className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-soft)] sm:rounded-[24px] sm:p-6"
     >
-    <p className="text-sm font-medium uppercase tracking-wide text-[var(--color-foreground-muted)]">
+    <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-foreground-muted)] sm:text-sm">
       {label}
     </p>
-    <p className="mt-3 text-3xl font-semibold text-[var(--color-foreground)]">
+    <p className="mt-2 text-2xl font-semibold text-[var(--color-foreground)] sm:mt-3 sm:text-3xl">
       {animateValue ? (
         <AnimatedNumber value={animateValue.amount} formatter={animateValue.formatter} />
       ) : (
@@ -172,7 +172,7 @@ const SummaryCard = ({
       )}
     </p>
     {helper ? (
-      <p className={`mt-2 text-sm font-bold ${helperColor || "text-[var(--color-foreground-muted)]"}`}>{helper}</p>
+      <p className={`mt-1.5 text-xs font-bold sm:mt-2 sm:text-sm ${helperColor || "text-[var(--color-foreground-muted)]"}`}>{helper}</p>
     ) : null}
     </motion.div>
   );
@@ -221,21 +221,21 @@ const SettingsForm = () => {
 
   return (
     <form
-      className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)]"
+      className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:rounded-[24px] sm:p-6"
       onSubmit={handleSubmit}
     >
       <div className="flex items-center gap-2">
-        <SettingsIcon className="h-5 w-5 text-[var(--color-primary)]" />
-        <h2 className="text-lg font-semibold text-[var(--color-foreground)]">
+        <SettingsIcon className="h-4 w-4 text-[var(--color-primary)] sm:h-5 sm:w-5" />
+        <h2 className="text-base font-semibold text-[var(--color-foreground)] sm:text-lg">
           Ajustes mensuales
         </h2>
       </div>
-      <p className="mt-2 text-sm text-[var(--color-foreground-muted)]">
+      <p className="mt-2 text-xs text-[var(--color-foreground-muted)] sm:text-sm">
         Define tu presupuesto base, la meta de ahorro y el porcentaje que dispara la alerta de sobre gasto.
       </p>
 
-      <div className="mt-6 grid gap-5 md:grid-cols-2">
-        <label className="flex flex-col gap-2 text-sm font-medium text-[var(--color-foreground)]">
+      <div className="mt-4 grid gap-4 sm:mt-6 sm:gap-5 md:grid-cols-2">
+        <label className="flex flex-col gap-1.5 text-xs font-medium text-[var(--color-foreground)] sm:gap-2 sm:text-sm">
           Presupuesto mensual
           <input
             type="number"
@@ -253,11 +253,11 @@ const SettingsForm = () => {
                   : prev,
               )
             }
-            className="rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-3 text-base shadow-inner focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]"
+            className="rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2.5 text-sm shadow-inner focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)] sm:rounded-2xl sm:px-4 sm:py-3 sm:text-base"
           />
         </label>
 
-        <label className="flex flex-col gap-2 text-sm font-medium text-[var(--color-foreground)]">
+        <label className="flex flex-col gap-1.5 text-xs font-medium text-[var(--color-foreground)] sm:gap-2 sm:text-sm">
           Meta de ahorro
           <input
             type="number"
@@ -275,11 +275,11 @@ const SettingsForm = () => {
                   : prev,
               )
             }
-            className="rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-3 text-base shadow-inner focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]"
+            className="rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2.5 text-sm shadow-inner focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)] sm:rounded-2xl sm:px-4 sm:py-3 sm:text-base"
           />
         </label>
 
-        <label className="md:col-span-2 flex flex-col gap-2 text-sm font-medium text-[var(--color-foreground)]">
+        <label className="flex flex-col gap-1.5 text-xs font-medium text-[var(--color-foreground)] sm:gap-2 sm:text-sm md:col-span-2">
           Umbral de alerta ({form.alertThresholdPct}% del presupuesto)
           <input
             type="range"
@@ -301,7 +301,7 @@ const SettingsForm = () => {
           />
         </label>
 
-        <label className="flex flex-col gap-2 text-sm font-medium text-[var(--color-foreground)]">
+        <label className="flex flex-col gap-1.5 text-xs font-medium text-[var(--color-foreground)] sm:gap-2 sm:text-sm">
           Moneda principal
           <select
             value={form.currency}
@@ -315,7 +315,7 @@ const SettingsForm = () => {
                   : prev,
               )
             }
-            className="rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-3 text-base focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]"
+            className="rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)] sm:rounded-2xl sm:px-4 sm:py-3 sm:text-base"
           >
             {currencyOptions.map((option) => (
               <option key={option} value={option}>
@@ -338,16 +338,16 @@ const SettingsForm = () => {
         </p>
       ) : null}
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-2 sm:mt-6 sm:gap-3">
         <button
           type="submit"
           disabled={saving}
-          className="flex items-center gap-2 rounded-full border border-transparent bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-[#e86b00] disabled:cursor-not-allowed disabled:opacity-70"
+          className="flex items-center gap-1.5 rounded-full border border-transparent bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[#e86b00] disabled:cursor-not-allowed disabled:opacity-70 sm:gap-2 sm:px-5 sm:py-3 sm:text-sm"
         >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" /> : null}
           Guardar ajustes
         </button>
-        <p className="text-xs text-[var(--color-foreground-muted)]">
+        <p className="text-[10px] text-[var(--color-foreground-muted)] sm:text-xs">
           Guardado localmente en tu navegador. Gestiona categorias y gastos fijos desde el panel lateral.
         </p>
       </div>
@@ -401,36 +401,36 @@ const SyncButton = ({
   };
 
   return (
-    <div className="mt-6 rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)]">
+    <div className="mt-4 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:mt-6 sm:rounded-[24px] sm:p-6">
       <div className="flex items-center gap-2">
-        <Upload className="h-5 w-5 text-[var(--color-accent)]" />
-        <h2 className="text-lg font-semibold text-[var(--color-foreground)]">
+        <Upload className="h-4 w-4 text-[var(--color-accent)] sm:h-5 sm:w-5" />
+        <h2 className="text-base font-semibold text-[var(--color-foreground)] sm:text-lg">
           Sincronización en la Nube
         </h2>
       </div>
-      <p className="mt-2 text-sm text-[var(--color-foreground-muted)]">
+      <p className="mt-2 text-xs text-[var(--color-foreground-muted)] sm:text-sm">
         Guarda tus datos en la nube para acceder desde cualquier dispositivo. Usa este botón cada vez que quieras sincronizar.
       </p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="mt-3 flex flex-wrap items-center gap-2 sm:mt-4 sm:gap-3">
         <button
           type="button"
           onClick={handleSync}
           disabled={syncing || !settings}
-          className="flex items-center gap-2 rounded-full border border-transparent bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-[#17b3b3] disabled:cursor-not-allowed disabled:opacity-70"
+          className="flex items-center gap-1.5 rounded-full border border-transparent bg-[var(--color-accent)] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[#17b3b3] disabled:cursor-not-allowed disabled:opacity-70 sm:gap-2 sm:px-5 sm:py-3 sm:text-sm"
         >
-          {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" /> : <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
           {syncing ? "Sincronizando..." : "Sincronizar Ahora"}
         </button>
 
         {status && (
-          <p className={`text-sm font-medium ${status.includes("✅") ? "text-[var(--color-accent)]" : "text-[var(--color-danger)]"}`}>
+          <p className={`text-xs font-medium sm:text-sm ${status.includes("✅") ? "text-[var(--color-accent)]" : "text-[var(--color-danger)]"}`}>
             {status}
           </p>
         )}
       </div>
 
-      <div className="mt-4 text-xs text-[var(--color-foreground-muted)]">
+      <div className="mt-3 text-[10px] text-[var(--color-foreground-muted)] sm:mt-4 sm:text-xs">
         <p>Estado: {serverSync.loading ? "Cargando..." : serverSync.syncing ? "Sincronizando..." : "Listo"}</p>
         {serverSync.error && <p className="mt-1 text-[var(--color-danger)]">Error: {serverSync.error}</p>}
       </div>
@@ -2367,12 +2367,12 @@ export default function Home() {
   return (
     <>
       <Confetti trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:gap-10 lg:px-10 lg:py-12">
-        <header className="flex flex-col gap-3 sm:gap-4">
-        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[var(--color-primary-soft)]/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--color-primary)] sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.2em]">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 lg:gap-8 lg:px-6 lg:py-8 xl:gap-10 xl:px-10 xl:py-12">
+        <header className="flex flex-col gap-2 sm:gap-3 lg:gap-4">
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--color-primary-soft)]/20 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-primary)] sm:gap-2 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-[0.15em] md:px-4 md:py-2 md:text-xs md:tracking-[0.2em]">
           Luna Budget Keeper
         </span>
-        <h1 className="text-2xl font-black text-[var(--color-foreground)] sm:text-3xl lg:text-4xl xl:text-5xl">
+        <h1 className="text-xl font-black leading-tight text-[var(--color-foreground)] sm:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl">
           Control total de tu presupuesto mensual
         </h1>
       </header>
