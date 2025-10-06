@@ -409,7 +409,7 @@ const SyncButton = ({
         </h2>
       </div>
       <p className="mt-2 text-sm text-[var(--color-foreground-muted)]">
-        Tus datos se sincronizan automáticamente. Usa este botón para forzar una sincronización inmediata.
+        Guarda tus datos en la nube para acceder desde cualquier dispositivo. Usa este botón cada vez que quieras sincronizar.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -2193,7 +2193,7 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    if (serverSync.loading || serverSync.error || hydrated) return;
+    if (serverSync.loading || hydrated) return;
 
     const hydrateFromServer = async () => {
       const { data } = serverSync;
@@ -2235,30 +2235,10 @@ export default function Home() {
     };
 
     void hydrateFromServer();
-  }, [serverSync.loading, serverSync.error, serverSync.data, refresh, refreshEntries, refreshFixed, hydrated]);
+  }, [serverSync.loading, hydrated, refresh, refreshEntries, refreshFixed]);
 
-  // Auto-sync to server when data changes
-  useEffect(() => {
-    if (serverSync.loading || !settings) return;
-
-    const syncData = async () => {
-      await serverSync.saveToServer({
-        settings,
-        entries: entriesManager.entries,
-        fixedExpenses: fixedExpensesManager.items,
-        categories,
-      });
-    };
-
-    void syncData();
-  }, [
-    entriesManager.entries,
-    fixedExpensesManager.items,
-    settings,
-    categories,
-    serverSync.loading,
-    serverSync.saveToServer,
-  ]);
+  // NOTE: Auto-sync disabled to prevent render loops
+  // Use manual "Sincronizar Ahora" button in Settings instead
 
   const handleAddCategory = useCallback(
     async (name: string) => {
