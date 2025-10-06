@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put, head } from "@vercel/blob";
+import { put, head, list } from "@vercel/blob";
 
 export const runtime = "edge";
 
@@ -10,12 +10,12 @@ export async function GET() {
   try {
     console.log("GET /api/data - Fetching blob...");
 
-    // Try to get blob info
-    let blobInfo;
-    try {
-      blobInfo = await head(BLOB_KEY);
-    } catch (headError) {
-      // Blob doesn't exist yet
+    // List all blobs to find our data file
+    const { blobs } = await list({
+      prefix: "luna-budget-data",
+    });
+
+    if (blobs.length === 0) {
       console.log("No blob found (first time), returning empty data");
       return NextResponse.json({
         settings: null,
@@ -25,20 +25,15 @@ export async function GET() {
       });
     }
 
-    if (!blobInfo || !blobInfo.url) {
-      console.log("Blob info invalid, returning empty data");
-      return NextResponse.json({
-        settings: null,
-        entries: [],
-        fixedExpenses: [],
-        categories: [],
-      });
-    }
+    // Get the most recent blob (in case there are multiple)
+    const latestBlob = blobs.sort((a, b) =>
+      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    )[0];
 
-    console.log("Blob found, fetching data from:", blobInfo.url);
+    console.log("Blob found, fetching data from:", latestBlob.url);
 
     // Fetch the blob data
-    const response = await fetch(blobInfo.url);
+    const response = await fetch(latestBlob.url);
 
     if (!response.ok) {
       console.error("Failed to fetch blob content:", response.status);
