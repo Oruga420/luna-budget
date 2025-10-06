@@ -8,10 +8,13 @@ const BLOB_KEY = "luna-budget-data.json";
 // GET - Fetch data from blob storage
 export async function GET() {
   try {
+    console.log("GET /api/data - Checking for blob...");
+
     // Check if blob exists
     const blobInfo = await head(BLOB_KEY);
 
     if (!blobInfo) {
+      console.log("No blob found, returning empty data");
       // Return empty data structure if no blob exists yet
       return NextResponse.json({
         settings: null,
@@ -21,9 +24,18 @@ export async function GET() {
       });
     }
 
+    console.log("Blob found, fetching data from:", blobInfo.url);
+
     // Fetch the blob data
     const response = await fetch(blobInfo.url);
     const data = await response.json();
+
+    console.log("Data fetched:", {
+      hasSettings: !!data.settings,
+      entriesCount: data.entries?.length || 0,
+      fixedExpensesCount: data.fixedExpenses?.length || 0,
+      categoriesCount: data.categories?.length || 0,
+    });
 
     return NextResponse.json(data);
   } catch (error) {

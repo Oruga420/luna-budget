@@ -2106,17 +2106,22 @@ export default function Home() {
   const refreshEntries = entriesManager.refresh;
   const refreshFixed = fixedExpensesManager.refresh;
 
-  // Load data from server on mount and hydrate IndexedDB
+  // Load data from server on mount and hydrate IndexedDB (only once)
+  const [hydrated, setHydrated] = useState(false);
+
   useEffect(() => {
-    if (serverSync.loading || serverSync.error) return;
+    if (serverSync.loading || serverSync.error || hydrated) return;
 
     const hydrateFromServer = async () => {
       const { data } = serverSync;
 
       // Skip if no data from server
       if (!data.settings && data.entries.length === 0 && data.fixedExpenses.length === 0) {
+        setHydrated(true);
         return;
       }
+
+      console.log("Hydrating from server...", data);
 
       // Import server data to IndexedDB
       const { saveSettings } = await import("../lib/storage/settings");
@@ -2138,12 +2143,16 @@ export default function Home() {
         await upsertFixedExpense(expense);
       }
 
+      console.log("Hydration complete, refreshing...");
+
       // Refresh all local state
       await Promise.all([refresh(), refreshEntries(), refreshFixed()]);
+
+      setHydrated(true);
     };
 
     void hydrateFromServer();
-  }, [serverSync.loading, serverSync.error, serverSync.data, refresh, refreshEntries, refreshFixed]);
+  }, [serverSync.loading, serverSync.error, serverSync.data, refresh, refreshEntries, refreshFixed, hydrated]);
 
   // Auto-sync to server when data changes
   useEffect(() => {
