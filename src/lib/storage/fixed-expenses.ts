@@ -26,14 +26,17 @@ export const listFixedExpenses = async (): Promise<FixedExpense[]> => {
 };
 
 export const upsertFixedExpense = async (
-  input: FixedExpenseInput,
+  input: FixedExpenseInput | FixedExpense,
 ): Promise<FixedExpense> => {
   const db = await getBudgetDB();
   const nowIso = new Date().toISOString();
   const id = input.id ?? createId();
   const existing = input.id ? await db.get("fixedExpenses", id) : null;
 
-  const record: FixedExpense = {
+  // If input is already a complete FixedExpense, use it directly
+  const isComplete = "createdAt" in input && "updatedAt" in input;
+
+  const record: FixedExpense = isComplete ? (input as FixedExpense) : {
     id,
     name: input.name,
     amount: input.amount,

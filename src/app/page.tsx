@@ -2106,6 +2106,45 @@ export default function Home() {
   const refreshEntries = entriesManager.refresh;
   const refreshFixed = fixedExpensesManager.refresh;
 
+  // Load data from server on mount and hydrate IndexedDB
+  useEffect(() => {
+    if (serverSync.loading || serverSync.error) return;
+
+    const hydrateFromServer = async () => {
+      const { data } = serverSync;
+
+      // Skip if no data from server
+      if (!data.settings && data.entries.length === 0 && data.fixedExpenses.length === 0) {
+        return;
+      }
+
+      // Import server data to IndexedDB
+      const { saveSettings } = await import("../lib/storage/settings");
+      const { upsertEntry } = await import("../lib/storage/entries");
+      const { upsertFixedExpense } = await import("../lib/storage/fixed-expenses");
+
+      // Save settings if they exist
+      if (data.settings) {
+        await saveSettings(data.settings);
+      }
+
+      // Save entries
+      for (const entry of data.entries) {
+        await upsertEntry(entry);
+      }
+
+      // Save fixed expenses
+      for (const expense of data.fixedExpenses) {
+        await upsertFixedExpense(expense);
+      }
+
+      // Refresh all local state
+      await Promise.all([refresh(), refreshEntries(), refreshFixed()]);
+    };
+
+    void hydrateFromServer();
+  }, [serverSync.loading, serverSync.error, serverSync.data, refresh, refreshEntries, refreshFixed]);
+
   // Auto-sync to server when data changes
   useEffect(() => {
     if (serverSync.loading || !settings) return;
