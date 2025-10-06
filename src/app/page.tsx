@@ -36,7 +36,7 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import type { BudgetEntry, FixedExpense } from "../domain/types";
+import type { BudgetEntry, BudgetSettings, FixedExpense } from "../domain/types";
 import {
   entryFormSchema,
   fixedExpenseFormSchema,
