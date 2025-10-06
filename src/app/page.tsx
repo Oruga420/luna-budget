@@ -361,12 +361,14 @@ const SyncButton = ({
   entries,
   fixedExpenses,
   categories,
+  onSyncComplete,
 }: {
   serverSync: ReturnType<typeof useServerSync>;
   settings: BudgetSettings | null;
   entries: BudgetEntry[];
   fixedExpenses: FixedExpense[];
   categories: string[];
+  onSyncComplete: () => Promise<void>;
 }) => {
   const [status, setStatus] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -378,7 +380,13 @@ const SyncButton = ({
     try {
       console.log("Manual sync triggered...");
 
-      // Save to server
+      // Step 1: Load from server first (PULL)
+      setStatus("⬇️ Cargando datos del servidor...");
+      await serverSync.loadFromServer();
+      console.log("Loaded from server");
+
+      // Step 2: Merge and save back (PUSH)
+      setStatus("⬆️ Guardando datos locales...");
       const success = await serverSync.saveToServer({
         settings,
         entries,
@@ -387,7 +395,10 @@ const SyncButton = ({
       });
 
       if (success) {
-        setStatus("✅ Datos sincronizados con el servidor");
+        setStatus("🔄 Sincronizando datos locales...");
+        // Step 3: Trigger hydration/refresh
+        await onSyncComplete();
+        setStatus("✅ Sincronización completa");
         console.log("Manual sync successful");
       } else {
         setStatus("❌ Error al sincronizar");
@@ -2619,6 +2630,30 @@ export default function Home() {
             entries={entriesManager.entries}
             fixedExpenses={fixedExpensesManager.items}
             categories={categories}
+            onSyncComplete={async () => {
+              // Re-hydrate from server data after sync
+              const { data } = serverSync;
+              if (data.entries.length > 0 || data.fixedExpenses.length > 0 || data.settings) {
+                const { putEntry } = await import("../lib/storage/entries");
+                const { upsertFixedExpense } = await import("../lib/storage/fixed-expenses");
+                const { saveSettings } = await import("../lib/storage/settings");
+
+                if (data.settings) {
+                  await saveSettings(data.settings);
+                }
+
+                for (const entry of data.entries) {
+                  await putEntry(entry);
+                }
+
+                for (const expense of data.fixedExpenses) {
+                  await upsertFixedExpense(expense);
+                }
+
+                // Refresh all state
+                await Promise.all([refresh(), refreshEntries(), refreshFixed()]);
+              }
+            }}
           />
           <ExportButton
             monthKey={monthKey}
