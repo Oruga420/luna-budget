@@ -707,10 +707,13 @@ const EntryComposer = ({
 
       const result = await response.json();
 
-      // Pre-fill form with OpenAI results
+      // Pre-fill form with Groq results (including amount if detected)
       setForm((prev) => ({
         ...prev,
         itemName: result.item_name || prev.itemName,
+        amount: result.amount !== null && result.amount !== undefined
+          ? String(result.amount)
+          : prev.amount,
         category: categories.includes(result.category_suggestion)
           ? result.category_suggestion
           : prev.category,

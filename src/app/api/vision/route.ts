@@ -62,16 +62,27 @@ export async function POST(request: NextRequest) {
               type: "text",
               text: `Analiza esta imagen de un recibo, ticket o producto y extrae la información en formato JSON.
 
+INSTRUCCIONES:
+1. Lee TODO el texto del recibo cuidadosamente
+2. Busca el MONTO TOTAL (puede estar como "Total", "Net total", "Amount", "Gross total", etc.)
+3. Si encuentras HST/GST/tax, busca el subtotal o total final
+4. El monto puede estar en cualquier parte del recibo
+
 Devuelve un objeto JSON con esta estructura exacta:
 {
-  "item_name": "nombre corto del producto o servicio (máximo 10 palabras)",
+  "item_name": "nombre corto del establecimiento o servicio (máximo 10 palabras)",
+  "amount": número decimal o null si no lo encuentras (ejemplo: 21.00, NO strings),
   "category_suggestion": "una de estas categorías: ${AVAILABLE_CATEGORIES.join(", ")}",
-  "notes": "observaciones adicionales relevantes o null si no hay"
+  "notes": "observaciones adicionales o null"
 }
 
-Si es un recibo/ticket, usa el nombre del establecimiento o producto principal.
-Si no puedes determinar algo, usa null.
-NO inventes información.`,
+IMPORTANTE:
+- "amount" debe ser un NÚMERO, no string
+- Si ves "Gross total $21.00", pon amount: 21.00
+- Si ves "Net total $18.58", pon amount: 18.58
+- Si no encuentras el monto, pon amount: null
+- Para estacionamiento/parking, usa categoría "transporte"
+- Para restaurantes/comida, usa "comida"`,
             },
             {
               type: "image_url",
@@ -92,6 +103,7 @@ NO inventes información.`,
 
     let parsedData: {
       item_name?: string;
+      amount?: number | null;
       category_suggestion?: string;
       notes?: string;
     };
@@ -113,6 +125,7 @@ NO inventes información.`,
     // Build result
     const result = {
       item_name: parsedData.item_name || "Item sin nombre",
+      amount: typeof parsedData.amount === 'number' ? parsedData.amount : null,
       category_suggestion: categorySuggestion,
       notes: parsedData.notes || null,
     };
