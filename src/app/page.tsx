@@ -2120,7 +2120,7 @@ export default function Home() {
 
       // Import server data to IndexedDB
       const { saveSettings } = await import("../lib/storage/settings");
-      const { upsertEntry } = await import("../lib/storage/entries");
+      const { putEntry } = await import("../lib/storage/entries");
       const { upsertFixedExpense } = await import("../lib/storage/fixed-expenses");
 
       // Save settings if they exist
@@ -2128,9 +2128,9 @@ export default function Home() {
         await saveSettings(data.settings);
       }
 
-      // Save entries
+      // Save entries (use putEntry to avoid recalculation)
       for (const entry of data.entries) {
-        await upsertEntry(entry);
+        await putEntry(entry);
       }
 
       // Save fixed expenses

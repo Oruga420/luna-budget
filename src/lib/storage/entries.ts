@@ -28,6 +28,13 @@ export const listEntriesByMonth = async (
   return db.getAllFromIndex("entries", "by-month", monthKey);
 };
 
+// Direct put without recalculation (for server sync hydration)
+export const putEntry = async (entry: BudgetEntry): Promise<BudgetEntry> => {
+  const db = await getBudgetDB();
+  await db.put("entries", entry);
+  return entry;
+};
+
 export const upsertEntry = async (
   input: EntryInput,
 ): Promise<BudgetEntry> => {
