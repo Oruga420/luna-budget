@@ -8,14 +8,25 @@ const BLOB_KEY = "luna-budget-data.json";
 // GET - Fetch data from blob storage
 export async function GET() {
   try {
-    console.log("GET /api/data - Checking for blob...");
+    console.log("GET /api/data - Fetching blob...");
 
-    // Check if blob exists
-    const blobInfo = await head(BLOB_KEY);
+    // Try to get blob info
+    let blobInfo;
+    try {
+      blobInfo = await head(BLOB_KEY);
+    } catch (headError) {
+      // Blob doesn't exist yet
+      console.log("No blob found (first time), returning empty data");
+      return NextResponse.json({
+        settings: null,
+        entries: [],
+        fixedExpenses: [],
+        categories: [],
+      });
+    }
 
-    if (!blobInfo) {
-      console.log("No blob found, returning empty data");
-      // Return empty data structure if no blob exists yet
+    if (!blobInfo || !blobInfo.url) {
+      console.log("Blob info invalid, returning empty data");
       return NextResponse.json({
         settings: null,
         entries: [],
@@ -28,9 +39,20 @@ export async function GET() {
 
     // Fetch the blob data
     const response = await fetch(blobInfo.url);
+
+    if (!response.ok) {
+      console.error("Failed to fetch blob content:", response.status);
+      return NextResponse.json({
+        settings: null,
+        entries: [],
+        fixedExpenses: [],
+        categories: [],
+      });
+    }
+
     const data = await response.json();
 
-    console.log("Data fetched:", {
+    console.log("Data fetched successfully:", {
       hasSettings: !!data.settings,
       entriesCount: data.entries?.length || 0,
       fixedExpensesCount: data.fixedExpenses?.length || 0,
@@ -39,7 +61,7 @@ export async function GET() {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error fetching data:", error);
+    console.error("Error in GET /api/data:", error);
 
     // Return empty data structure on error
     return NextResponse.json({
