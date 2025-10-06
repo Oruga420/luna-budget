@@ -2125,7 +2125,8 @@ export default function Home() {
     fixedExpensesManager.items,
     settings,
     categories,
-    serverSync,
+    serverSync.loading,
+    serverSync.saveToServer,
   ]);
 
   const handleAddCategory = useCallback(
