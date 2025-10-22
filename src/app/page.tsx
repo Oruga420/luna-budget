@@ -59,12 +59,21 @@ import { useFixedExpensesManager } from "../lib/hooks/useFixedExpensesManager";
 import { useServerSync } from "../lib/hooks/useServerSync";
 import { addCategory, renameCategory, removeCategory } from "../lib/storage/categories";
 
+// ---------------------------------------------------------------------------
+// Shared configuration & helpers
+// ---------------------------------------------------------------------------
+
 const currencyOptions = ["MXN", "USD", "EUR", "COP", "ARS", "CAD"] as const;
 
+// User friendly labels for the entry type selector.
 const expenseTypeLabels: Record<"fixed" | "variable", string> = {
   fixed: "Fijo",
   variable: "Variable",
 };
+
+// ---------------------------------------------------------------------------
+// Form state contracts
+// ---------------------------------------------------------------------------
 
 interface EntryFormState {
   id?: string;
@@ -85,6 +94,10 @@ interface FixedExpenseFormState {
   billingDay: string;
   notes: string;
 }
+
+// ---------------------------------------------------------------------------
+// Utility functions
+// ---------------------------------------------------------------------------
 
 const getTodayLocalIso = () => {
   const now = new Date();
@@ -122,6 +135,10 @@ const createEntryState = (
   date: entry?.dateIso ?? getTodayLocalIso(),
   notes: entry?.notes ?? "",
 });
+
+// ---------------------------------------------------------------------------
+// Reusable presentational components
+// ---------------------------------------------------------------------------
 
 const AnimatedNumber = ({ value, formatter }: { value: number; formatter: (n: number) => string }) => {
   const spring = useSpring(value, {
@@ -178,6 +195,10 @@ const SummaryCard = ({
   );
 };
 
+// ---------------------------------------------------------------------------
+// Settings & synchronization workflow
+// ---------------------------------------------------------------------------
+
 const SettingsForm = () => {
   const { settings, updateSettings, saving, error } = useSettings();
   const [form, setForm] = useState<{
@@ -188,6 +209,7 @@ const SettingsForm = () => {
   } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
+  // When global settings change, populate the local editable snapshot.
   useEffect(() => {
     if (!settings) return;
     setForm({
@@ -202,6 +224,7 @@ const SettingsForm = () => {
     return null;
   }
 
+  // Validate and persist the form values via the provided callback.
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus(null);
@@ -373,6 +396,7 @@ const SyncButton = ({
   const [status, setStatus] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
+  // Manual 3-step sync: pull, push, then refresh local caches.
   const handleSync = async () => {
     setStatus(null);
     setSyncing(true);
@@ -449,6 +473,10 @@ const SyncButton = ({
   );
 };
 
+// ---------------------------------------------------------------------------
+// Data export utilities
+// ---------------------------------------------------------------------------
+
 const ExportButton = ({
   monthKey,
   entries,
@@ -464,6 +492,7 @@ const ExportButton = ({
   const [exporting, setExporting] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  // Combine entries + fixed expenses into a CSV and trigger a download.
   const handleExport = async () => {
     if (!settings) return;
 
@@ -557,6 +586,10 @@ interface EntryComposerProps {
   error?: string | null;
 }
 
+// ---------------------------------------------------------------------------
+// Budget entry creation & editing
+// ---------------------------------------------------------------------------
+
 const EntryComposer = ({
   categories,
   currencyOptions: currencyChoices,
@@ -569,10 +602,12 @@ const EntryComposer = ({
   error,
 }: EntryComposerProps) => {
   const wasEditingRef = useRef(false);
+  // Form level state for the currently edited/created entry.
   const [form, setForm] = useState<EntryFormState>(() =>
     createEntryState(initialEntry, categories, defaultCurrency),
   );
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof EntryFormState, string>>>({});
+  // Toggles between manual entry and photo/receipt extraction.
   const [inputMode, setInputMode] = useState<"manual" | "photo">("manual");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -585,6 +620,7 @@ const EntryComposer = ({
     [initialEntry, categories, defaultCurrency],
   );
 
+  // Refresh the local form whenever a different entry is supplied for editing.
   useEffect(() => {
     if (initialEntry) {
       wasEditingRef.current = true;
@@ -593,6 +629,7 @@ const EntryComposer = ({
     }
   }, [initialEntry, initialState]);
 
+  // When categories change ensure the selected category remains valid.
   useEffect(() => {
     setForm((prev) => {
       const nextCategory = ensureValidCategory(prev.category, categories);
@@ -606,6 +643,7 @@ const EntryComposer = ({
     });
   }, [categories]);
 
+  // Reset the form after finishing an edit session.
   useEffect(() => {
     if (!initialEntry && mode === "create" && wasEditingRef.current) {
       wasEditingRef.current = false;
@@ -659,6 +697,7 @@ const EntryComposer = ({
     }
   };
 
+  // Handle file validation and create a preview for vision powered capture.
   const handleImageSelect = (file: File) => {
     if (!file.type.startsWith("image/")) {
       setImageError("Por favor selecciona un archivo de imagen válido");
@@ -696,6 +735,7 @@ const EntryComposer = ({
     }
   };
 
+  // Send the selected image to the vision API and hydrate the form with the AI result.
   const handleProcessImage = async () => {
     if (!selectedImage) return;
 
@@ -743,6 +783,7 @@ const EntryComposer = ({
     }
   };
 
+  // Reset all image capture state.
   const clearImage = () => {
     setSelectedImage(null);
     setImagePreview(null);
@@ -1055,6 +1096,10 @@ interface EntriesSectionProps {
   onSaveSuccess?: () => void;
 }
 
+// ---------------------------------------------------------------------------
+// Budget entries table, filters & modals
+// ---------------------------------------------------------------------------
+
 const EntriesSection = ({
   categories,
   currency,
@@ -1071,6 +1116,7 @@ const EntriesSection = ({
     saveEntry,
     removeEntry,
   } = manager;
+  // Local UI state that only impacts this section (modals, statuses, etc.).
   const [editingEntry, setEditingEntry] = useState<BudgetEntry | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -1078,6 +1124,7 @@ const EntriesSection = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  // Persist either a new entry or an existing edit.
   const handleSubmit = useCallback(
     async (data: EntryFormData) => {
       setSubmitting(true);
@@ -1115,6 +1162,7 @@ const EntriesSection = ({
     [editingEntry, saveEntry, onSaveSuccess],
   );
 
+  // Remove an entry after user confirmation.
   const handleDelete = useCallback(
     async (entry: BudgetEntry) => {
       if (!window.confirm("Eliminar este movimiento?")) {
@@ -1139,6 +1187,7 @@ const EntriesSection = ({
     [editingEntry, removeEntry],
   );
 
+  // Restore the default filters in a single place.
   const resetFilters = () => {
     setFilters({
       search: "",
@@ -1383,12 +1432,17 @@ interface CategoryManagerProps {
   onRemove: (target: string, fallback: string) => Promise<void>;
 }
 
+// ---------------------------------------------------------------------------
+// Category CRUD helpers
+// ---------------------------------------------------------------------------
+
 const CategoryManager = ({ categories, onAdd, onRename, onRemove }: CategoryManagerProps) => {
   const [newCategory, setNewCategory] = useState("");
   const [adding, setAdding] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Persist a brand new category and reset the quick form.
   const handleAdd = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAdding(true);
@@ -1486,6 +1540,7 @@ const CategoryRow = ({ name, categories, onRename, onRemove }: CategoryRowProps)
     });
   }, [categories, name]);
 
+  // Rename the current category after validating the draft name.
   const handleRename = async () => {
     setBusy(true);
     setError(null);
@@ -1501,6 +1556,7 @@ const CategoryRow = ({ name, categories, onRename, onRemove }: CategoryRowProps)
     }
   };
 
+  // Remove the category, moving existing entries to the selected fallback.
   const handleRemove = async () => {
     if (!fallback) {
       setError("Selecciona una categoria alternativa.");
@@ -1657,6 +1713,10 @@ interface FixedExpenseComposerProps {
   error?: string | null;
 }
 
+// ---------------------------------------------------------------------------
+// Fixed expenses management
+// ---------------------------------------------------------------------------
+
 const FixedExpenseComposer = ({
   categories,
   defaultCategory,
@@ -1678,6 +1738,7 @@ const FixedExpenseComposer = ({
     [initialItem, categories],
   );
 
+  // Mirror updates from the parent when editing an existing expense.
   useEffect(() => {
     if (initialItem) {
       wasEditingRef.current = true;
@@ -1686,6 +1747,7 @@ const FixedExpenseComposer = ({
     }
   }, [initialItem, initialState]);
 
+  // If categories change ensure we keep pointing at a valid option.
   useEffect(() => {
     setForm((prev) => {
       const nextCategory = ensureValidCategory(prev.category, categories);
@@ -1699,6 +1761,7 @@ const FixedExpenseComposer = ({
     });
   }, [categories, defaultCategory]);
 
+  // After finishing an edit switch back to a clean create form.
   useEffect(() => {
     if (!initialItem && mode === "create" && wasEditingRef.current) {
       wasEditingRef.current = false;
@@ -1715,6 +1778,7 @@ const FixedExpenseComposer = ({
     );
   }
 
+  // Validate and forward the form payload to the parent.
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFieldErrors({});
@@ -1889,8 +1953,13 @@ interface FixedExpensesSectionProps {
   manager: ReturnType<typeof useFixedExpensesManager>;
 }
 
+// ---------------------------------------------------------------------------
+// Fixed expenses list & inline editing
+// ---------------------------------------------------------------------------
+
 const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSectionProps) => {
   const { items, loading, save, remove, monthlyTotal } = manager;
+  // Local UI bookkeeping for edit mode, success messages and inline editing state.
   const [editing, setEditing] = useState<FixedExpense | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1899,6 +1968,7 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [cellValue, setCellValue] = useState<string>("");
 
+  // Create or update a fixed expense via the manager hook.
   const handleSubmit = useCallback(
     async (data: FixedExpenseFormData) => {
       setSubmitting(true);
@@ -1926,6 +1996,7 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
     [editing, save],
   );
 
+  // Delete a fixed expense record after confirmation.
   const handleDelete = useCallback(
     async (item: FixedExpense) => {
       if (!window.confirm("Eliminar este gasto fijo?")) {
@@ -1950,6 +2021,7 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
     [editing, remove],
   );
 
+  // Prepare inline cell editing by capturing the selected value.
   const handleCellClick = (item: FixedExpense, field: string) => {
     setEditingCell({ id: item.id, field });
     if (field === "name") setCellValue(item.name);
@@ -1958,6 +2030,7 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
     else if (field === "amount") setCellValue(item.amount.toString());
   };
 
+  // Persist inline edits when the field loses focus.
   const handleCellBlur = async (item: FixedExpense) => {
     if (!editingCell) return;
 
@@ -1987,6 +2060,7 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
     }
   };
 
+  // Support keyboard driven inline editing UX.
   const handleCellKeyDown = (e: React.KeyboardEvent, item: FixedExpense) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -2177,18 +2251,26 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
   );
 };
 
+// ---------------------------------------------------------------------------
+// Main application container
+// ---------------------------------------------------------------------------
+
 export default function Home() {
+  // Global providers expose persistence + server sync.
   const { settings, loading, refresh } = useSettings();
   const serverSync = useServerSync();
+  // Feature level hooks for entries and fixed expenses.
   const monthKey = useMemo(() => getMonthKey(new Date()), []);
   const entriesManager = useEntriesManager(monthKey);
   const fixedExpensesManager = useFixedExpensesManager();
+  // UI tabs and visual toggles.
   const [currentPage, setCurrentPage] = useState<"home" | "settings">("home");
   const [chartView, setChartView] = useState<"variable" | "all">("variable");
   const [showConfetti, setShowConfetti] = useState(false);
   const [showTimeline, setShowTimeline] = useState(true);
   const shouldReduceMotion = useReducedMotion();
 
+  // Derived values from settings + hooks.
   const categories = settings?.categories ?? [];
   const currency = settings?.currency ?? "MXN";
   const spent = entriesManager.spent;
@@ -2200,12 +2282,14 @@ export default function Home() {
       ? totalSpent / settings.budget >= settings.alertThresholdPct
       : false;
 
+  // Convenient aliases for refresh functions we call together often.
   const refreshEntries = entriesManager.refresh;
   const refreshFixed = fixedExpensesManager.refresh;
 
   // Load data from server on mount and hydrate IndexedDB (only once)
   const [hydrated, setHydrated] = useState(false);
 
+  // On first load, hydrate the local stores using the remote snapshot.
   useEffect(() => {
     if (serverSync.loading || hydrated) return;
 
@@ -2254,6 +2338,7 @@ export default function Home() {
   // NOTE: Auto-sync disabled to prevent render loops
   // Use manual "Sincronizar Ahora" button in Settings instead
 
+  // Proxy helpers to keep local state in sync after category CRUD.
   const handleAddCategory = useCallback(
     async (name: string) => {
       await addCategory(name);
@@ -2378,6 +2463,7 @@ export default function Home() {
     );
   }
 
+  // Render confetti + layout shell. Switch content based on the current page tab.
   return (
     <>
       <Confetti trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
