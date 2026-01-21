@@ -1,0 +1,212 @@
+﻿npx :  ΓÜá Warning: Next.js 
+inferred your workspace 
+root, but it may not be 
+correct.
+At line:1 char:1
++ npx next build --debug 
+2>&1 | Out-File -FilePath 
+debug-build.txt -Enc ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: ( ΓÜá Wa  
+  rning: N...not be correc   
+ t.:String) [], RemoteExc    
+eption
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+ We detected multiple 
+lockfiles and selected the 
+directory of C:\Users\chuck\p
+ackage-lock.json as the root 
+directory.
+ To silence this warning, 
+set `outputFileTracingRoot` 
+in your Next.js config, or 
+consider removing one of the 
+lockfiles if it's not needed.
+   See https://nextjs.org/doc
+s/app/api-reference/config/ne
+xt-config-js/output#caveats 
+for more information.
+ Detected additional 
+lockfiles: 
+   * C:\Users\chuck\OneDrive\
+Desktop\Dev\lunas_budget\pack
+age-lock.json
+
+   Γû▓ Next.js 15.5.4
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+Failed to compile.
+
+src\app\layout.tsx
+An error occurred in 
+`next/font`.
+
+Error: Cannot find module '..
+/lightningcss.win32-x64-msvc.
+node'
+Require stack:
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\@tailwindcss\node\node_
+modules\lightningcss\node\ind
+ex.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\@tailwindcss\node\dist\
+index.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\@tailwindcss\postcss\di
+st\index.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\build\webpack
+\config\blocks\css\plugins.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\build\webpack
+\config\blocks\css\index.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\build\webpack
+\config\index.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\build\webpack
+-config.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\build\webpack
+-build\impl.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\compiled\jest
+-worker\processChild.js
+    at 
+Module._resolveFilename (node
+:internal/modules/cjs/loader:
+1145:15)
+    at C:\Users\chuck\OneDriv
+e\Desktop\Dev\lunas_budget\no
+de_modules\next\dist\server\r
+equire-hook.js:57:36
+    at Module._load (node:int
+ernal/modules/cjs/loader:986:
+27)
+    at Module.require (node:i
+nternal/modules/cjs/loader:12
+33:19)
+    at mod.require (C:\Users\
+chuck\OneDrive\Desktop\Dev\lu
+nas_budget\node_modules\next\
+dist\server\require-hook.js:6
+8:28)
+    at require (node:internal
+/modules/helpers:179:18)
+    at Object.<anonymous> (C:
+\Users\chuck\OneDrive\Desktop
+\Dev\lunas_budget\node_module
+s\@tailwindcss\node\node_modu
+les\lightningcss\node\index.j
+s:22:22)
+    at Module._compile (node:
+internal/modules/cjs/loader:1
+358:14)
+    at 
+Module._extensions..js (node:
+internal/modules/cjs/loader:1
+416:10)
+    at Module.load (node:inte
+rnal/modules/cjs/loader:1208:
+32)
+
+src\app\layout.tsx
+An error occurred in 
+`next/font`.
+
+Error: Cannot find module '..
+/lightningcss.win32-x64-msvc.
+node'
+Require stack:
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\@tailwindcss\node\node_
+modules\lightningcss\node\ind
+ex.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\@tailwindcss\node\dist\
+index.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\@tailwindcss\postcss\di
+st\index.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\build\webpack
+\config\blocks\css\plugins.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\build\webpack
+\config\blocks\css\index.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\build\webpack
+\config\index.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\build\webpack
+-config.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\build\webpack
+-build\impl.js
+- C:\Users\chuck\OneDrive\Des
+ktop\Dev\lunas_budget\node_mo
+dules\next\dist\compiled\jest
+-worker\processChild.js
+    at 
+Module._resolveFilename (node
+:internal/modules/cjs/loader:
+1145:15)
+    at C:\Users\chuck\OneDriv
+e\Desktop\Dev\lunas_budget\no
+de_modules\next\dist\server\r
+equire-hook.js:57:36
+    at Module._load (node:int
+ernal/modules/cjs/loader:986:
+27)
+    at Module.require (node:i
+nternal/modules/cjs/loader:12
+33:19)
+    at mod.require (C:\Users\
+chuck\OneDrive\Desktop\Dev\lu
+nas_budget\node_modules\next\
+dist\server\require-hook.js:6
+8:28)
+    at require (node:internal
+/modules/helpers:179:18)
+    at Object.<anonymous> (C:
+\Users\chuck\OneDrive\Desktop
+\Dev\lunas_budget\node_module
+s\@tailwindcss\node\node_modu
+les\lightningcss\node\index.j
+s:22:22)
+    at Module._compile (node:
+internal/modules/cjs/loader:1
+358:14)
+    at 
+Module._extensions..js (node:
+internal/modules/cjs/loader:1
+416:10)
+    at Module.load (node:inte
+rnal/modules/cjs/loader:1208:
+32)
+
+
+> Build failed because of 
+webpack errors

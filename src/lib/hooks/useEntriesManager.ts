@@ -2,8 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BudgetEntry } from "../../domain/types";
-import type { EntryInput } from "../storage/entries";
-import { deleteEntry, listEntriesByMonth, upsertEntry } from "../storage/entries";
+import type { EntryInput } from "@/domain/types";
+import { 
+  deleteEntryAction as deleteEntry, 
+  getEntriesAction as listEntriesByMonth, 
+  addEntryAction as upsertEntry 
+} from "@/app/actions/data";
 import { filterAndSortEntries, type EntryFilters } from "../entries/filter";
 
 const createDefaultFilters = (): EntryFilters => ({

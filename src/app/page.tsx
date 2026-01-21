@@ -20,9 +20,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../components/ui/dialog";
-import { Navigation } from "../components/Navigation";
-import { Confetti } from "../components/Confetti";
+} from "@/components/ui/dialog";
+import { Navigation } from "@/components/Navigation";
+import { Confetti } from "@/components/Confetti";
 import {
   PieChart,
   Pie,
@@ -36,28 +36,32 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import type { BudgetEntry, BudgetSettings, FixedExpense } from "../domain/types";
+import type { BudgetEntry, BudgetSettings, FixedExpense } from "@/domain/types";
 import {
   entryFormSchema,
   fixedExpenseFormSchema,
   categoryNameSchema,
   type EntryFormData,
   type FixedExpenseFormData,
-} from "../domain/schemas";
-import { useSettings } from "../state/settings-context";
-import { formatCurrency, formatPercent } from "../lib/utils/format";
-import { getMonthKey } from "../lib/utils/date";
+} from "@/domain/schemas";
+import { useSettings } from "@/state/settings-context";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { getMonthKey } from "@/lib/utils/date";
 import {
   buildCsvBlob,
   buildMonthFilename,
   serializeEntriesToCsv,
-} from "../lib/export/csv";
-import { triggerBrowserDownload } from "../lib/export/download";
-import { useEntriesManager } from "../lib/hooks/useEntriesManager";
-import type { EntryFilters } from "../lib/hooks/useEntriesManager";
-import { useFixedExpensesManager } from "../lib/hooks/useFixedExpensesManager";
-import { useServerSync } from "../lib/hooks/useServerSync";
-import { addCategory, renameCategory, removeCategory } from "../lib/storage/categories";
+} from "@/lib/export/csv";
+import { triggerBrowserDownload } from "@/lib/export/download";
+import { useEntriesManager } from "@/lib/hooks/useEntriesManager";
+import type { EntryFilters } from "@/lib/hooks/useEntriesManager";
+import { useFixedExpensesManager } from "@/lib/hooks/useFixedExpensesManager";
+
+import { 
+  addCategoryAction as addCategory, 
+  renameCategoryAction as renameCategory,
+  removeCategoryAction as removeCategory,
+} from "@/app/actions/data";
 
 const currencyOptions = ["MXN", "USD", "EUR", "COP", "ARS", "CAD"] as const;
 
@@ -65,6 +69,19 @@ const expenseTypeLabels: Record<"fixed" | "variable", string> = {
   fixed: "Fijo",
   variable: "Variable",
 };
+
+const COLORS = [
+  "var(--color-primary)",
+  "var(--color-warning)",
+  "var(--color-accent)",
+  "var(--color-magenta)",
+  "var(--color-yellow)",
+  "var(--color-cyan)",
+  "#ff6b9d",
+  "#4ecdc4",
+  "#95e1d3",
+  "#f38181",
+];
 
 interface EntryFormState {
   id?: string;
@@ -355,99 +372,7 @@ const SettingsForm = () => {
   );
 };
 
-const SyncButton = ({
-  serverSync,
-  settings,
-  entries,
-  fixedExpenses,
-  categories,
-  onSyncComplete,
-}: {
-  serverSync: ReturnType<typeof useServerSync>;
-  settings: BudgetSettings | null;
-  entries: BudgetEntry[];
-  fixedExpenses: FixedExpense[];
-  categories: string[];
-  onSyncComplete: () => Promise<void>;
-}) => {
-  const [status, setStatus] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
 
-  const handleSync = async () => {
-    setStatus(null);
-    setSyncing(true);
-
-    try {
-      console.log("Manual sync triggered...");
-
-      // Step 1: Load from server first (PULL)
-      setStatus("⬇️ Cargando datos del servidor...");
-      await serverSync.loadFromServer();
-      console.log("Loaded from server");
-
-      // Step 2: Merge and save back (PUSH)
-      setStatus("⬆️ Guardando datos locales...");
-      const success = await serverSync.saveToServer({
-        settings,
-        entries,
-        fixedExpenses,
-        categories,
-      });
-
-      if (success) {
-        setStatus("🔄 Sincronizando datos locales...");
-        // Step 3: Trigger hydration/refresh
-        await onSyncComplete();
-        setStatus("✅ Sincronización completa");
-        console.log("Manual sync successful");
-      } else {
-        setStatus("❌ Error al sincronizar");
-      }
-    } catch (error) {
-      console.error("Manual sync error:", error);
-      setStatus("❌ Error al sincronizar");
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  return (
-    <div className="mt-4 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:mt-6 sm:rounded-[24px] sm:p-6">
-      <div className="flex items-center gap-2">
-        <Upload className="h-4 w-4 text-[var(--color-accent)] sm:h-5 sm:w-5" />
-        <h2 className="text-base font-semibold text-[var(--color-foreground)] sm:text-lg">
-          Sincronización en la Nube
-        </h2>
-      </div>
-      <p className="mt-2 text-xs text-[var(--color-foreground-muted)] sm:text-sm">
-        Guarda tus datos en la nube para acceder desde cualquier dispositivo. Usa este botón cada vez que quieras sincronizar.
-      </p>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2 sm:mt-4 sm:gap-3">
-        <button
-          type="button"
-          onClick={handleSync}
-          disabled={syncing || !settings}
-          className="flex items-center gap-1.5 rounded-full border border-transparent bg-[var(--color-accent)] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[#17b3b3] disabled:cursor-not-allowed disabled:opacity-70 sm:gap-2 sm:px-5 sm:py-3 sm:text-sm"
-        >
-          {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" /> : <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-          {syncing ? "Sincronizando..." : "Sincronizar Ahora"}
-        </button>
-
-        {status && (
-          <p className={`text-xs font-medium sm:text-sm ${status.includes("✅") ? "text-[var(--color-accent)]" : "text-[var(--color-danger)]"}`}>
-            {status}
-          </p>
-        )}
-      </div>
-
-      <div className="mt-3 text-[10px] text-[var(--color-foreground-muted)] sm:mt-4 sm:text-xs">
-        <p>Estado: {serverSync.loading ? "Cargando..." : serverSync.syncing ? "Sincronizando..." : "Listo"}</p>
-        {serverSync.error && <p className="mt-1 text-[var(--color-danger)]">Error: {serverSync.error}</p>}
-      </div>
-    </div>
-  );
-};
 
 const ExportButton = ({
   monthKey,
@@ -2179,7 +2104,7 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
 
 export default function Home() {
   const { settings, loading, refresh } = useSettings();
-  const serverSync = useServerSync();
+
   const monthKey = useMemo(() => getMonthKey(new Date()), []);
   const entriesManager = useEntriesManager(monthKey);
   const fixedExpensesManager = useFixedExpensesManager();
@@ -2203,53 +2128,7 @@ export default function Home() {
   const refreshEntries = entriesManager.refresh;
   const refreshFixed = fixedExpensesManager.refresh;
 
-  // Load data from server on mount and hydrate IndexedDB (only once)
-  const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
-    if (serverSync.loading || hydrated) return;
-
-    const hydrateFromServer = async () => {
-      const { data } = serverSync;
-
-      // Skip if no data from server
-      if (!data.settings && data.entries.length === 0 && data.fixedExpenses.length === 0) {
-        setHydrated(true);
-        return;
-      }
-
-      console.log("Hydrating from server...", data);
-
-      // Import server data to IndexedDB
-      const { saveSettings } = await import("../lib/storage/settings");
-      const { putEntry } = await import("../lib/storage/entries");
-      const { upsertFixedExpense } = await import("../lib/storage/fixed-expenses");
-
-      // Save settings if they exist
-      if (data.settings) {
-        await saveSettings(data.settings);
-      }
-
-      // Save entries (use putEntry to avoid recalculation)
-      for (const entry of data.entries) {
-        await putEntry(entry);
-      }
-
-      // Save fixed expenses
-      for (const expense of data.fixedExpenses) {
-        await upsertFixedExpense(expense);
-      }
-
-      console.log("Hydration complete, refreshing...");
-
-      // Refresh all local state
-      await Promise.all([refresh(), refreshEntries(), refreshFixed()]);
-
-      setHydrated(true);
-    };
-
-    void hydrateFromServer();
-  }, [serverSync.loading, hydrated, refresh, refreshEntries, refreshFixed]);
 
   // NOTE: Auto-sync disabled to prevent render loops
   // Use manual "Sincronizar Ahora" button in Settings instead
@@ -2278,19 +2157,7 @@ export default function Home() {
     [refresh, refreshEntries, refreshFixed],
   );
 
-  // Calculate chart data
-  const COLORS = [
-    "var(--color-primary)",
-    "var(--color-warning)",
-    "var(--color-accent)",
-    "var(--color-magenta)",
-    "var(--color-yellow)",
-    "var(--color-cyan)",
-    "#ff6b9d",
-    "#4ecdc4",
-    "#95e1d3",
-    "#f38181",
-  ];
+
 
   const chartDataVariable = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
@@ -2506,7 +2373,7 @@ export default function Home() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number) => formatCurrency(value, currency)}
+                    formatter={(value: unknown) => formatCurrency(Number(value), currency)}
                     contentStyle={{
                       backgroundColor: "white",
                       border: "3px solid black",
@@ -2577,9 +2444,11 @@ export default function Home() {
                             fontWeight: "bold",
                           }}
                           labelStyle={{ color: "var(--color-foreground)", fontWeight: "900" }}
-                          formatter={(value: number, name: string) => {
-                            if (name === "cumulative") return [formatCurrency(value, currency), "Acumulado"];
-                            return [formatCurrency(value, currency), "Del Día"];
+                          formatter={(value: unknown, name: unknown) => {
+                            const val = Number(value);
+                            const n = String(name);
+                            if (n === "cumulative") return [formatCurrency(val, currency), "Acumulado"];
+                            return [formatCurrency(val, currency), "Del Día"];
                           }}
                         />
                         <Legend
@@ -2624,37 +2493,7 @@ export default function Home() {
       ) : (
         <div className="grid gap-6">
           <SettingsForm />
-          <SyncButton
-            serverSync={serverSync}
-            settings={settings}
-            entries={entriesManager.entries}
-            fixedExpenses={fixedExpensesManager.items}
-            categories={categories}
-            onSyncComplete={async () => {
-              // Re-hydrate from server data after sync
-              const { data } = serverSync;
-              if (data.entries.length > 0 || data.fixedExpenses.length > 0 || data.settings) {
-                const { putEntry } = await import("../lib/storage/entries");
-                const { upsertFixedExpense } = await import("../lib/storage/fixed-expenses");
-                const { saveSettings } = await import("../lib/storage/settings");
 
-                if (data.settings) {
-                  await saveSettings(data.settings);
-                }
-
-                for (const entry of data.entries) {
-                  await putEntry(entry);
-                }
-
-                for (const expense of data.fixedExpenses) {
-                  await upsertFixedExpense(expense);
-                }
-
-                // Refresh all state
-                await Promise.all([refresh(), refreshEntries(), refreshFixed()]);
-              }
-            }}
-          />
           <ExportButton
             monthKey={monthKey}
             entries={entriesManager.entries}
