@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
-// Initialize Groq client
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
 // Available categories as per project plan
 const AVAILABLE_CATEGORIES = [
   "renta",
@@ -23,6 +18,19 @@ export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   try {
+    // Check for API key
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json(
+        { error: "GROQ_API_KEY is not configured" },
+        { status: 500 }
+      );
+    }
+
+    // Initialize Groq client
+    const groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+
     // Parse form data
     const formData = await request.formData();
     const imageFile = formData.get("image") as File;

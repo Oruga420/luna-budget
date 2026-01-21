@@ -12,6 +12,7 @@ describe("csv helpers", () => {
     categories: ["comida", "renta"],
     createdAt: new Date("2025-01-01T00:00:00Z").toISOString(),
     updatedAt: new Date("2025-01-01T00:00:00Z").toISOString(),
+    lastRolledMonthKey: "2025-01",
   };
 
   const baseEntry: BudgetEntry = {

@@ -1,5 +1,6 @@
 ﻿import type { BudgetSettings } from "../../domain/types";
 import { createDefaultSettings } from "../../domain/defaults";
+import { getMonthKey } from "../utils/date";
 import { getBudgetDB } from "./db";
 
 const SETTINGS_ID = "current";
@@ -9,6 +10,16 @@ export const loadSettings = async (): Promise<BudgetSettings> => {
   const record = await db.get("settings", SETTINGS_ID);
 
   if (record) {
+    if (!record.lastRolledMonthKey) {
+      const migrated: BudgetSettings = {
+        ...record,
+        lastRolledMonthKey: getMonthKey(new Date()),
+        updatedAt: new Date().toISOString(),
+      };
+      await db.put("settings", migrated);
+      return migrated;
+    }
+
     return record;
   }
 

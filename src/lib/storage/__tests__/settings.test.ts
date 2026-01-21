@@ -29,6 +29,7 @@ describe("settings storage", () => {
       currency: "MXN",
       categories: expect.arrayContaining(["comida", "renta", "otros"]),
     });
+    expect(settings.lastRolledMonthKey).toMatch(/^\d{4}-\d{2}$/u);
   });
 
   it("persists updates with timestamps", async () => {
@@ -49,5 +50,6 @@ describe("settings storage", () => {
 
     const loaded = await loadSettings();
     expect(loaded).toEqual(updated);
+    expect(loaded.lastRolledMonthKey).toEqual(updated.lastRolledMonthKey);
   });
 });

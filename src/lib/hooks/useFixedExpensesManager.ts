@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FixedExpense } from "../../domain/types";
 import {
-  deleteFixedExpense,
-  listFixedExpenses,
-  upsertFixedExpense,
-  type FixedExpenseInput,
-} from "../storage/fixed-expenses";
+  deleteFixedExpenseAction as deleteFixedExpense,
+  getFixedExpensesAction as listFixedExpenses,
+  upsertFixedExpenseAction as upsertFixedExpense,
+} from "@/app/actions/data";
+import type { FixedExpenseInput } from "@/domain/types";
 
 export const useFixedExpensesManager = () => {
   const [items, setItems] = useState<FixedExpense[]>([]);

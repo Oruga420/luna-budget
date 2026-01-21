@@ -17,6 +17,13 @@ export const DEFAULT_ALERT_THRESHOLD = 0.5;
 export const DEFAULT_BUDGET = 0;
 export const DEFAULT_SAVINGS_GOAL = 0;
 
+const pad = (value: number) => String(value).padStart(2, "0");
+
+const getCurrentMonthKey = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+};
+
 export const createDefaultSettings = (): BudgetSettings => {
   const now = new Date().toISOString();
   return {
@@ -26,6 +33,7 @@ export const createDefaultSettings = (): BudgetSettings => {
     alertThresholdPct: DEFAULT_ALERT_THRESHOLD,
     currency: DEFAULT_CURRENCY,
     categories: DEFAULT_CATEGORIES,
+    lastRolledMonthKey: getCurrentMonthKey(),
     createdAt: now,
     updatedAt: now,
   };

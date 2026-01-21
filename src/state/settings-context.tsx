@@ -10,11 +10,12 @@ import {
   type ReactNode,
 } from "react";
 import type { BudgetSettings } from "../domain/types";
+import { createDefaultSettings } from "@/domain/defaults";
 import {
-  loadSettings,
-  resetSettings,
-  saveSettings,
-} from "../lib/storage/settings";
+  getSettingsAction as loadSettings,
+  updateSettingsAction as saveSettings,
+} from "@/app/actions/data";
+// resetSettings logic handled via update or manual default set calling saveSettings
 
 interface SettingsContextValue {
   settings: BudgetSettings | null;
@@ -79,7 +80,8 @@ export const SettingsProvider = ({
   const reset = useCallback(async () => {
     setSaving(true);
     try {
-      const defaults = await resetSettings();
+      const defaults = createDefaultSettings();
+      await saveSettings(defaults);
       setSettings(defaults);
       setError(null);
     } catch (err) {

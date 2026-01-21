@@ -8,6 +8,7 @@ export interface BudgetSettings {
   alertThresholdPct: number;
   currency: string;
   categories: string[];
+  lastRolledMonthKey: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,4 +53,27 @@ export interface StoredImage {
   blob: Blob;
   createdAt: string;
   expiresAt: string | null;
+}
+
+export interface EntryInput {
+  id?: string;
+  itemName: string;
+  amount: number;
+  currency: string;
+  category: string;
+  type: ExpenseType;
+  source: EntrySource;
+  notes?: string | null;
+  imageRef?: string | null;
+  date: string | Date;
+}
+
+export interface FixedExpenseInput {
+  id?: string;
+  name: string;
+  amount: number;
+  category: string;
+  billingDay?: number | null;
+  notes?: string | null;
+  currency?: string;
 }

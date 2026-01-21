@@ -20,9 +20,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../components/ui/dialog";
-import { Navigation } from "../components/Navigation";
-import { Confetti } from "../components/Confetti";
+} from "@/components/ui/dialog";
+import { Navigation } from "@/components/Navigation";
+import { Confetti } from "@/components/Confetti";
 import {
   PieChart,
   Pie,
@@ -36,44 +36,52 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import type { BudgetEntry, BudgetSettings, FixedExpense } from "../domain/types";
+import type { BudgetEntry, FixedExpense } from "@/domain/types";
 import {
   entryFormSchema,
   fixedExpenseFormSchema,
   categoryNameSchema,
   type EntryFormData,
   type FixedExpenseFormData,
-} from "../domain/schemas";
-import { useSettings } from "../state/settings-context";
-import { formatCurrency, formatPercent } from "../lib/utils/format";
-import { getMonthKey } from "../lib/utils/date";
+} from "@/domain/schemas";
+import { useSettings } from "@/state/settings-context";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { getMonthKey } from "@/lib/utils/date";
 import {
   buildCsvBlob,
   buildMonthFilename,
   serializeEntriesToCsv,
-} from "../lib/export/csv";
-import { triggerBrowserDownload } from "../lib/export/download";
-import { useEntriesManager } from "../lib/hooks/useEntriesManager";
-import type { EntryFilters } from "../lib/hooks/useEntriesManager";
-import { useFixedExpensesManager } from "../lib/hooks/useFixedExpensesManager";
-import { useServerSync } from "../lib/hooks/useServerSync";
-import { addCategory, renameCategory, removeCategory } from "../lib/storage/categories";
+} from "@/lib/export/csv";
+import { triggerBrowserDownload } from "@/lib/export/download";
+import { useEntriesManager } from "@/lib/hooks/useEntriesManager";
+import type { EntryFilters } from "@/lib/hooks/useEntriesManager";
+import { useFixedExpensesManager } from "@/lib/hooks/useFixedExpensesManager";
 
-// ---------------------------------------------------------------------------
-// Shared configuration & helpers
-// ---------------------------------------------------------------------------
+import { 
+  addCategoryAction as addCategory, 
+  renameCategoryAction as renameCategory,
+  removeCategoryAction as removeCategory,
+} from "@/app/actions/data";
 
 const currencyOptions = ["MXN", "USD", "EUR", "COP", "ARS", "CAD"] as const;
 
-// User friendly labels for the entry type selector.
 const expenseTypeLabels: Record<"fixed" | "variable", string> = {
   fixed: "Fijo",
   variable: "Variable",
 };
 
-// ---------------------------------------------------------------------------
-// Form state contracts
-// ---------------------------------------------------------------------------
+const COLORS = [
+  "var(--color-primary)",
+  "var(--color-warning)",
+  "var(--color-accent)",
+  "var(--color-magenta)",
+  "var(--color-yellow)",
+  "var(--color-cyan)",
+  "#ff6b9d",
+  "#4ecdc4",
+  "#95e1d3",
+  "#f38181",
+];
 
 interface EntryFormState {
   id?: string;
@@ -94,10 +102,6 @@ interface FixedExpenseFormState {
   billingDay: string;
   notes: string;
 }
-
-// ---------------------------------------------------------------------------
-// Utility functions
-// ---------------------------------------------------------------------------
 
 const getTodayLocalIso = () => {
   const now = new Date();
@@ -135,10 +139,6 @@ const createEntryState = (
   date: entry?.dateIso ?? getTodayLocalIso(),
   notes: entry?.notes ?? "",
 });
-
-// ---------------------------------------------------------------------------
-// Reusable presentational components
-// ---------------------------------------------------------------------------
 
 const AnimatedNumber = ({ value, formatter }: { value: number; formatter: (n: number) => string }) => {
   const spring = useSpring(value, {
@@ -195,10 +195,6 @@ const SummaryCard = ({
   );
 };
 
-// ---------------------------------------------------------------------------
-// Settings & synchronization workflow
-// ---------------------------------------------------------------------------
-
 const SettingsForm = () => {
   const { settings, updateSettings, saving, error } = useSettings();
   const [form, setForm] = useState<{
@@ -209,7 +205,6 @@ const SettingsForm = () => {
   } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
-  // When global settings change, populate the local editable snapshot.
   useEffect(() => {
     if (!settings) return;
     setForm({
@@ -224,7 +219,6 @@ const SettingsForm = () => {
     return null;
   }
 
-  // Validate and persist the form values via the provided callback.
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus(null);
@@ -378,104 +372,7 @@ const SettingsForm = () => {
   );
 };
 
-const SyncButton = ({
-  serverSync,
-  settings,
-  entries,
-  fixedExpenses,
-  categories,
-  onSyncComplete,
-}: {
-  serverSync: ReturnType<typeof useServerSync>;
-  settings: BudgetSettings | null;
-  entries: BudgetEntry[];
-  fixedExpenses: FixedExpense[];
-  categories: string[];
-  onSyncComplete: () => Promise<void>;
-}) => {
-  const [status, setStatus] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
 
-  // Manual 3-step sync: pull, push, then refresh local caches.
-  const handleSync = async () => {
-    setStatus(null);
-    setSyncing(true);
-
-    try {
-      console.log("Manual sync triggered...");
-
-      // Step 1: Load from server first (PULL)
-      setStatus("⬇️ Cargando datos del servidor...");
-      await serverSync.loadFromServer();
-      console.log("Loaded from server");
-
-      // Step 2: Merge and save back (PUSH)
-      setStatus("⬆️ Guardando datos locales...");
-      const success = await serverSync.saveToServer({
-        settings,
-        entries,
-        fixedExpenses,
-        categories,
-      });
-
-      if (success) {
-        setStatus("🔄 Sincronizando datos locales...");
-        // Step 3: Trigger hydration/refresh
-        await onSyncComplete();
-        setStatus("✅ Sincronización completa");
-        console.log("Manual sync successful");
-      } else {
-        setStatus("❌ Error al sincronizar");
-      }
-    } catch (error) {
-      console.error("Manual sync error:", error);
-      setStatus("❌ Error al sincronizar");
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  return (
-    <div className="mt-4 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:mt-6 sm:rounded-[24px] sm:p-6">
-      <div className="flex items-center gap-2">
-        <Upload className="h-4 w-4 text-[var(--color-accent)] sm:h-5 sm:w-5" />
-        <h2 className="text-base font-semibold text-[var(--color-foreground)] sm:text-lg">
-          Sincronización en la Nube
-        </h2>
-      </div>
-      <p className="mt-2 text-xs text-[var(--color-foreground-muted)] sm:text-sm">
-        Guarda tus datos en la nube para acceder desde cualquier dispositivo. Usa este botón cada vez que quieras sincronizar.
-      </p>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2 sm:mt-4 sm:gap-3">
-        <button
-          type="button"
-          onClick={handleSync}
-          disabled={syncing || !settings}
-          className="flex items-center gap-1.5 rounded-full border border-transparent bg-[var(--color-accent)] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[#17b3b3] disabled:cursor-not-allowed disabled:opacity-70 sm:gap-2 sm:px-5 sm:py-3 sm:text-sm"
-        >
-          {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" /> : <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-          {syncing ? "Sincronizando..." : "Sincronizar Ahora"}
-        </button>
-
-        {status && (
-          <p className={`text-xs font-medium sm:text-sm ${status.includes("✅") ? "text-[var(--color-accent)]" : "text-[var(--color-danger)]"}`}>
-            {status}
-          </p>
-        )}
-      </div>
-
-      <div className="mt-3 text-[10px] text-[var(--color-foreground-muted)] sm:mt-4 sm:text-xs">
-        <p>Estado: {serverSync.loading ? "Cargando..." : serverSync.syncing ? "Sincronizando..." : "Listo"}</p>
-        {serverSync.error && <p className="mt-1 text-[var(--color-danger)]">Error: {serverSync.error}</p>}
-      </div>
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Data export utilities
-// ---------------------------------------------------------------------------
 
 const ExportButton = ({
   monthKey,
@@ -492,7 +389,6 @@ const ExportButton = ({
   const [exporting, setExporting] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Combine entries + fixed expenses into a CSV and trigger a download.
   const handleExport = async () => {
     if (!settings) return;
 
@@ -586,10 +482,6 @@ interface EntryComposerProps {
   error?: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// Budget entry creation & editing
-// ---------------------------------------------------------------------------
-
 const EntryComposer = ({
   categories,
   currencyOptions: currencyChoices,
@@ -602,12 +494,10 @@ const EntryComposer = ({
   error,
 }: EntryComposerProps) => {
   const wasEditingRef = useRef(false);
-  // Form level state for the currently edited/created entry.
   const [form, setForm] = useState<EntryFormState>(() =>
     createEntryState(initialEntry, categories, defaultCurrency),
   );
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof EntryFormState, string>>>({});
-  // Toggles between manual entry and photo/receipt extraction.
   const [inputMode, setInputMode] = useState<"manual" | "photo">("manual");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -620,7 +510,6 @@ const EntryComposer = ({
     [initialEntry, categories, defaultCurrency],
   );
 
-  // Refresh the local form whenever a different entry is supplied for editing.
   useEffect(() => {
     if (initialEntry) {
       wasEditingRef.current = true;
@@ -629,7 +518,6 @@ const EntryComposer = ({
     }
   }, [initialEntry, initialState]);
 
-  // When categories change ensure the selected category remains valid.
   useEffect(() => {
     setForm((prev) => {
       const nextCategory = ensureValidCategory(prev.category, categories);
@@ -643,7 +531,6 @@ const EntryComposer = ({
     });
   }, [categories]);
 
-  // Reset the form after finishing an edit session.
   useEffect(() => {
     if (!initialEntry && mode === "create" && wasEditingRef.current) {
       wasEditingRef.current = false;
@@ -697,7 +584,6 @@ const EntryComposer = ({
     }
   };
 
-  // Handle file validation and create a preview for vision powered capture.
   const handleImageSelect = (file: File) => {
     if (!file.type.startsWith("image/")) {
       setImageError("Por favor selecciona un archivo de imagen válido");
@@ -735,7 +621,6 @@ const EntryComposer = ({
     }
   };
 
-  // Send the selected image to the vision API and hydrate the form with the AI result.
   const handleProcessImage = async () => {
     if (!selectedImage) return;
 
@@ -783,7 +668,6 @@ const EntryComposer = ({
     }
   };
 
-  // Reset all image capture state.
   const clearImage = () => {
     setSelectedImage(null);
     setImagePreview(null);
@@ -1096,10 +980,6 @@ interface EntriesSectionProps {
   onSaveSuccess?: () => void;
 }
 
-// ---------------------------------------------------------------------------
-// Budget entries table, filters & modals
-// ---------------------------------------------------------------------------
-
 const EntriesSection = ({
   categories,
   currency,
@@ -1116,7 +996,6 @@ const EntriesSection = ({
     saveEntry,
     removeEntry,
   } = manager;
-  // Local UI state that only impacts this section (modals, statuses, etc.).
   const [editingEntry, setEditingEntry] = useState<BudgetEntry | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -1124,7 +1003,6 @@ const EntriesSection = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Persist either a new entry or an existing edit.
   const handleSubmit = useCallback(
     async (data: EntryFormData) => {
       setSubmitting(true);
@@ -1162,7 +1040,6 @@ const EntriesSection = ({
     [editingEntry, saveEntry, onSaveSuccess],
   );
 
-  // Remove an entry after user confirmation.
   const handleDelete = useCallback(
     async (entry: BudgetEntry) => {
       if (!window.confirm("Eliminar este movimiento?")) {
@@ -1187,7 +1064,6 @@ const EntriesSection = ({
     [editingEntry, removeEntry],
   );
 
-  // Restore the default filters in a single place.
   const resetFilters = () => {
     setFilters({
       search: "",
@@ -1214,7 +1090,7 @@ const EntriesSection = ({
         </span>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
+      <Dialog open={dialogOpen} onOpenChange={(open: boolean) => {
         setDialogOpen(open);
         if (!open) {
           setEditingEntry(null);
@@ -1432,17 +1308,12 @@ interface CategoryManagerProps {
   onRemove: (target: string, fallback: string) => Promise<void>;
 }
 
-// ---------------------------------------------------------------------------
-// Category CRUD helpers
-// ---------------------------------------------------------------------------
-
 const CategoryManager = ({ categories, onAdd, onRename, onRemove }: CategoryManagerProps) => {
   const [newCategory, setNewCategory] = useState("");
   const [adding, setAdding] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Persist a brand new category and reset the quick form.
   const handleAdd = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAdding(true);
@@ -1540,7 +1411,6 @@ const CategoryRow = ({ name, categories, onRename, onRemove }: CategoryRowProps)
     });
   }, [categories, name]);
 
-  // Rename the current category after validating the draft name.
   const handleRename = async () => {
     setBusy(true);
     setError(null);
@@ -1556,7 +1426,6 @@ const CategoryRow = ({ name, categories, onRename, onRemove }: CategoryRowProps)
     }
   };
 
-  // Remove the category, moving existing entries to the selected fallback.
   const handleRemove = async () => {
     if (!fallback) {
       setError("Selecciona una categoria alternativa.");
@@ -1713,10 +1582,6 @@ interface FixedExpenseComposerProps {
   error?: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// Fixed expenses management
-// ---------------------------------------------------------------------------
-
 const FixedExpenseComposer = ({
   categories,
   defaultCategory,
@@ -1738,7 +1603,6 @@ const FixedExpenseComposer = ({
     [initialItem, categories],
   );
 
-  // Mirror updates from the parent when editing an existing expense.
   useEffect(() => {
     if (initialItem) {
       wasEditingRef.current = true;
@@ -1747,7 +1611,6 @@ const FixedExpenseComposer = ({
     }
   }, [initialItem, initialState]);
 
-  // If categories change ensure we keep pointing at a valid option.
   useEffect(() => {
     setForm((prev) => {
       const nextCategory = ensureValidCategory(prev.category, categories);
@@ -1761,7 +1624,6 @@ const FixedExpenseComposer = ({
     });
   }, [categories, defaultCategory]);
 
-  // After finishing an edit switch back to a clean create form.
   useEffect(() => {
     if (!initialItem && mode === "create" && wasEditingRef.current) {
       wasEditingRef.current = false;
@@ -1778,7 +1640,6 @@ const FixedExpenseComposer = ({
     );
   }
 
-  // Validate and forward the form payload to the parent.
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFieldErrors({});
@@ -1953,13 +1814,8 @@ interface FixedExpensesSectionProps {
   manager: ReturnType<typeof useFixedExpensesManager>;
 }
 
-// ---------------------------------------------------------------------------
-// Fixed expenses list & inline editing
-// ---------------------------------------------------------------------------
-
 const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSectionProps) => {
   const { items, loading, save, remove, monthlyTotal } = manager;
-  // Local UI bookkeeping for edit mode, success messages and inline editing state.
   const [editing, setEditing] = useState<FixedExpense | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1968,7 +1824,6 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [cellValue, setCellValue] = useState<string>("");
 
-  // Create or update a fixed expense via the manager hook.
   const handleSubmit = useCallback(
     async (data: FixedExpenseFormData) => {
       setSubmitting(true);
@@ -1996,7 +1851,6 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
     [editing, save],
   );
 
-  // Delete a fixed expense record after confirmation.
   const handleDelete = useCallback(
     async (item: FixedExpense) => {
       if (!window.confirm("Eliminar este gasto fijo?")) {
@@ -2021,7 +1875,6 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
     [editing, remove],
   );
 
-  // Prepare inline cell editing by capturing the selected value.
   const handleCellClick = (item: FixedExpense, field: string) => {
     setEditingCell({ id: item.id, field });
     if (field === "name") setCellValue(item.name);
@@ -2030,7 +1883,6 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
     else if (field === "amount") setCellValue(item.amount.toString());
   };
 
-  // Persist inline edits when the field loses focus.
   const handleCellBlur = async (item: FixedExpense) => {
     if (!editingCell) return;
 
@@ -2060,7 +1912,6 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
     }
   };
 
-  // Support keyboard driven inline editing UX.
   const handleCellKeyDown = (e: React.KeyboardEvent, item: FixedExpense) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -2251,26 +2102,18 @@ const FixedExpensesSection = ({ categories, currency, manager }: FixedExpensesSe
   );
 };
 
-// ---------------------------------------------------------------------------
-// Main application container
-// ---------------------------------------------------------------------------
-
 export default function Home() {
-  // Global providers expose persistence + server sync.
   const { settings, loading, refresh } = useSettings();
-  const serverSync = useServerSync();
-  // Feature level hooks for entries and fixed expenses.
+
   const monthKey = useMemo(() => getMonthKey(new Date()), []);
   const entriesManager = useEntriesManager(monthKey);
   const fixedExpensesManager = useFixedExpensesManager();
-  // UI tabs and visual toggles.
   const [currentPage, setCurrentPage] = useState<"home" | "settings">("home");
   const [chartView, setChartView] = useState<"variable" | "all">("variable");
   const [showConfetti, setShowConfetti] = useState(false);
   const [showTimeline, setShowTimeline] = useState(true);
   const shouldReduceMotion = useReducedMotion();
 
-  // Derived values from settings + hooks.
   const categories = settings?.categories ?? [];
   const currency = settings?.currency ?? "MXN";
   const spent = entriesManager.spent;
@@ -2282,63 +2125,14 @@ export default function Home() {
       ? totalSpent / settings.budget >= settings.alertThresholdPct
       : false;
 
-  // Convenient aliases for refresh functions we call together often.
   const refreshEntries = entriesManager.refresh;
   const refreshFixed = fixedExpensesManager.refresh;
 
-  // Load data from server on mount and hydrate IndexedDB (only once)
-  const [hydrated, setHydrated] = useState(false);
 
-  // On first load, hydrate the local stores using the remote snapshot.
-  useEffect(() => {
-    if (serverSync.loading || hydrated) return;
-
-    const hydrateFromServer = async () => {
-      const { data } = serverSync;
-
-      // Skip if no data from server
-      if (!data.settings && data.entries.length === 0 && data.fixedExpenses.length === 0) {
-        setHydrated(true);
-        return;
-      }
-
-      console.log("Hydrating from server...", data);
-
-      // Import server data to IndexedDB
-      const { saveSettings } = await import("../lib/storage/settings");
-      const { putEntry } = await import("../lib/storage/entries");
-      const { upsertFixedExpense } = await import("../lib/storage/fixed-expenses");
-
-      // Save settings if they exist
-      if (data.settings) {
-        await saveSettings(data.settings);
-      }
-
-      // Save entries (use putEntry to avoid recalculation)
-      for (const entry of data.entries) {
-        await putEntry(entry);
-      }
-
-      // Save fixed expenses
-      for (const expense of data.fixedExpenses) {
-        await upsertFixedExpense(expense);
-      }
-
-      console.log("Hydration complete, refreshing...");
-
-      // Refresh all local state
-      await Promise.all([refresh(), refreshEntries(), refreshFixed()]);
-
-      setHydrated(true);
-    };
-
-    void hydrateFromServer();
-  }, [serverSync.loading, hydrated, refresh, refreshEntries, refreshFixed]);
 
   // NOTE: Auto-sync disabled to prevent render loops
   // Use manual "Sincronizar Ahora" button in Settings instead
 
-  // Proxy helpers to keep local state in sync after category CRUD.
   const handleAddCategory = useCallback(
     async (name: string) => {
       await addCategory(name);
@@ -2363,19 +2157,7 @@ export default function Home() {
     [refresh, refreshEntries, refreshFixed],
   );
 
-  // Calculate chart data
-  const COLORS = [
-    "var(--color-primary)",
-    "var(--color-warning)",
-    "var(--color-accent)",
-    "var(--color-magenta)",
-    "var(--color-yellow)",
-    "var(--color-cyan)",
-    "#ff6b9d",
-    "#4ecdc4",
-    "#95e1d3",
-    "#f38181",
-  ];
+
 
   const chartDataVariable = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
@@ -2391,7 +2173,7 @@ export default function Home() {
         color: COLORS[index % COLORS.length],
       }))
       .sort((a, b) => b.value - a.value);
-  }, [entriesManager.entries, COLORS]);
+  }, [entriesManager.entries]);
 
   const chartDataAll = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
@@ -2415,7 +2197,7 @@ export default function Home() {
         color: COLORS[index % COLORS.length],
       }))
       .sort((a, b) => b.value - a.value);
-  }, [entriesManager.entries, fixedExpensesManager.items, COLORS]);
+  }, [entriesManager.entries, fixedExpensesManager.items]);
 
   const chartData = chartView === "variable" ? chartDataVariable : chartDataAll;
 
@@ -2463,7 +2245,6 @@ export default function Home() {
     );
   }
 
-  // Render confetti + layout shell. Switch content based on the current page tab.
   return (
     <>
       <Confetti trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
@@ -2592,7 +2373,7 @@ export default function Home() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number) => formatCurrency(value, currency)}
+                    formatter={(value: unknown) => formatCurrency(Number(value), currency)}
                     contentStyle={{
                       backgroundColor: "white",
                       border: "3px solid black",
@@ -2663,9 +2444,11 @@ export default function Home() {
                             fontWeight: "bold",
                           }}
                           labelStyle={{ color: "var(--color-foreground)", fontWeight: "900" }}
-                          formatter={(value: number, name: string) => {
-                            if (name === "cumulative") return [formatCurrency(value, currency), "Acumulado"];
-                            return [formatCurrency(value, currency), "Del Día"];
+                          formatter={(value: unknown, name: unknown) => {
+                            const val = Number(value);
+                            const n = String(name);
+                            if (n === "cumulative") return [formatCurrency(val, currency), "Acumulado"];
+                            return [formatCurrency(val, currency), "Del Día"];
                           }}
                         />
                         <Legend
@@ -2710,37 +2493,7 @@ export default function Home() {
       ) : (
         <div className="grid gap-6">
           <SettingsForm />
-          <SyncButton
-            serverSync={serverSync}
-            settings={settings}
-            entries={entriesManager.entries}
-            fixedExpenses={fixedExpensesManager.items}
-            categories={categories}
-            onSyncComplete={async () => {
-              // Re-hydrate from server data after sync
-              const { data } = serverSync;
-              if (data.entries.length > 0 || data.fixedExpenses.length > 0 || data.settings) {
-                const { putEntry } = await import("../lib/storage/entries");
-                const { upsertFixedExpense } = await import("../lib/storage/fixed-expenses");
-                const { saveSettings } = await import("../lib/storage/settings");
 
-                if (data.settings) {
-                  await saveSettings(data.settings);
-                }
-
-                for (const entry of data.entries) {
-                  await putEntry(entry);
-                }
-
-                for (const expense of data.fixedExpenses) {
-                  await upsertFixedExpense(expense);
-                }
-
-                // Refresh all state
-                await Promise.all([refresh(), refreshEntries(), refreshFixed()]);
-              }
-            }}
-          />
           <ExportButton
             monthKey={monthKey}
             entries={entriesManager.entries}
