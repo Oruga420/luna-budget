@@ -1,12 +1,16 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from './schema';
-import dotenv from 'dotenv';
+const connectionString = process.env.DATABASE_URL;
 
-dotenv.config({ path: '.env.local' });
+if (!connectionString) {
+  console.error("CRITICAL: DATABASE_URL is not set in environment variables.");
+}
 
-const client = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
+const pool = new pg.Pool({
+  connectionString,
+  ssl: connectionString?.includes("sslmode=require") ? { rejectUnauthorized: false } : false,
+  max: 10, // Limit connections in serverless
 });
 
-export const db = drizzle(client, { schema });
+export const db = drizzle(pool, { schema });
