@@ -36,7 +36,7 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import type { BudgetEntry, BudgetSettings, FixedExpense } from "@/domain/types";
+import type { BudgetEntry, FixedExpense } from "@/domain/types";
 import {
   entryFormSchema,
   fixedExpenseFormSchema,
@@ -1090,7 +1090,7 @@ const EntriesSection = ({
         </span>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
+      <Dialog open={dialogOpen} onOpenChange={(open: boolean) => {
         setDialogOpen(open);
         if (!open) {
           setEditingEntry(null);
@@ -2173,7 +2173,7 @@ export default function Home() {
         color: COLORS[index % COLORS.length],
       }))
       .sort((a, b) => b.value - a.value);
-  }, [entriesManager.entries, COLORS]);
+  }, [entriesManager.entries]);
 
   const chartDataAll = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
@@ -2197,7 +2197,7 @@ export default function Home() {
         color: COLORS[index % COLORS.length],
       }))
       .sort((a, b) => b.value - a.value);
-  }, [entriesManager.entries, fixedExpensesManager.items, COLORS]);
+  }, [entriesManager.entries, fixedExpensesManager.items]);
 
   const chartData = chartView === "variable" ? chartDataVariable : chartDataAll;
 

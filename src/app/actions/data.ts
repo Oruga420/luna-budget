@@ -328,7 +328,7 @@ export async function removeCategoryAction(target: string, fallback: string): Pr
    return getSettingsAction();
 }
 
-export async function injectFixedExpensesAction(monthKey: string, currency: string): Promise<BudgetEntry[]> {
+export async function injectFixedExpensesAction(monthKey: string): Promise<BudgetEntry[]> {
   const userId = await requireUser();
 
   const allFixed = await db.select().from(fixedExpenses).where(eq(fixedExpenses.userId, userId));

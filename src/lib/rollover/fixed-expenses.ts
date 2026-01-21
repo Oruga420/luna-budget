@@ -52,8 +52,6 @@ export const toBudgetEntryFromFixed = (
 
 export const injectFixedExpensesForMonth = async ({
   fixedExpenses,
-  monthKey,
-  currency,
 }: {
   fixedExpenses: FixedExpense[];
   monthKey: string;
@@ -65,10 +63,12 @@ export const injectFixedExpensesForMonth = async ({
 
   const results: BudgetEntry[] = [];
 
-  for (const fixed of fixedExpenses) {
-    // const saved = await upsertEntry(toEntryInputFromFixed(fixed, monthKey, currency));
+  /*
+  for (const _fixed of fixedExpenses) {
+    // const saved = await upsertEntry(toEntryInputFromFixed(_fixed, monthKey, currency));
     // results.push(saved);
   }
+  */
   console.warn("injectFixedExpensesForMonth is temporarily disabled during refactor");
 
   return results;
